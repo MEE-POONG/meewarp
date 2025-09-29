@@ -19,11 +19,13 @@ import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminCreateWarpPage from './pages/admin/AdminCreateWarpPage';
 import TestPage from './pages/test';
+import TestOnePage from './pages/testOne';
 
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
     <Route path="/test" element={<TestPage />} />
+    <Route path="/testOne" element={<TestOnePage />} />
     <Route path="/admin/login" element={<AdminLoginPage />} />
     <Route element={<AdminGuard />}>
       <Route path="/admin" element={<AdminLayout />}>
