@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-// import { API_ENDPOINTS } from '../config' // ⛔️ ปิดการใช้ API จริงในโหมด Mock
 
 /**
- * ✅ Mock Mode
- * - ตั้งค่า MOCK_MODE = true เพื่อรันหน้า UI จาก "ข้อมูลสมมติ" โดยไม่เรียก API จริง
- * - ปิดทุก EventSource / fetch จริง และแทนที่ด้วยตัวจำลอง (interval)
+ * ✅ โหมดจำลองข้อมูล
+ * - ใช้ข้อมูลจำลองภาษาไทยแทน API จริง
+ * - แสดงผลระบบ MeeWarp แบบเต็มรูปแบบ
  */
 const MOCK_MODE = true
 
-// ---------- Types ----------
+// ---------- ประเภทข้อมูล ----------
 export type Supporter = {
   customerName: string
   totalAmount: number
@@ -35,92 +34,119 @@ export type DisplayWarp = {
   selfDisplayName?: string | null
 }
 
-// ---------- Mock Data ----------
+// ---------- ข้อมูลจำลอง ----------
 const MOCK_SETTINGS: AppSettings = {
-  brandName: 'MeeWarp',
-  tagline: 'ปล่อยวาร์ปของคุณให้สว่างจอ',
-  // สามารถเปลี่ยนเป็น base64 หรือ URL ที่เข้าถึงได้
+  brandName: 'มีวาร์ป',
+  tagline: 'แสดงตัวตนของคุณบนจอใหญ่',
   backgroundImage:
-    'https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1887&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1579952363873-27d3bfad9c0d?q=80&w=1935&auto=format&fit=crop',
 }
 
 const MOCK_SUPPORTERS_POOL: Supporter[] = [
   {
-    customerName: 'Bow',
-    totalAmount: 399,
-    customerAvatar:
-      'https://i.pravatar.cc/200?img=47',
+    customerName: 'นางสาวพิมพ์ชนก',
+    totalAmount: 1200,
+    customerAvatar: 'https://i.pravatar.cc/200?img=9',
   },
   {
-    customerName: 'Est',
-    totalAmount: 259,
-    customerAvatar:
-      'https://i.pravatar.cc/200?img=12',
+    customerName: 'คุณสมชาย',
+    totalAmount: 850,
+    customerAvatar: 'https://i.pravatar.cc/200?img=14',
   },
   {
-    customerName: 'AZ',
-    totalAmount: 199,
-    customerAvatar:
-      'https://i.pravatar.cc/200?img=33',
+    customerName: 'น้องแนท',
+    totalAmount: 650,
+    customerAvatar: 'https://i.pravatar.cc/200?img=23',
   },
   {
-    customerName: 'MeeTer',
-    totalAmount: 149,
-    customerAvatar:
-      'https://i.pravatar.cc/200?img=25',
+    customerName: 'พี่บิ๊ก',
+    totalAmount: 590,
+    customerAvatar: 'https://i.pravatar.cc/200?img=31',
+  },
+  {
+    customerName: 'คุณครูสมหญิง',
+    totalAmount: 480,
+    customerAvatar: 'https://i.pravatar.cc/200?img=44',
+  },
+  {
+    customerName: 'น้องจิ๋ม',
+    totalAmount: 350,
+    customerAvatar: 'https://i.pravatar.cc/200?img=16',
   },
 ]
 
 const MOCK_WARPS_QUEUE: DisplayWarp[] = [
   {
-    id: 'warp_001',
-    customerName: 'Bow',
-    selfDisplayName: 'โบว์ 💚',
-    customerAvatar: 'https://i.pravatar.cc/300?img=47',
+    id: 'warp_thai_001',
+    customerName: 'พิมพ์ชนก',
+    selfDisplayName: 'พิมพ์ชนก 💖',
+    customerAvatar: 'https://i.pravatar.cc/300?img=9',
     productImage:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1470&auto=format&fit=crop',
-    socialLink: 'https://instagram.com/',
-    quote: 'วันนี้ต้องติดวาร์ปฉันให้สุดจอ! ✨',
+      'https://images.unsplash.com/photo-1526045431048-f857369baa09?q=80&w=1470&auto=format&fit=crop',
+    socialLink: 'https://instagram.com/pimchanok_official',
+    quote: 'สวัสดีค่ะทุกคน! วันนี้มาแชร์ความสุขให้กันน๊า ✨💕',
+    displaySeconds: 15,
+  },
+  {
+    id: 'warp_thai_002',
+    customerName: 'สมชาย',
+    selfDisplayName: 'อาจารย์สมชาย 📚',
+    customerAvatar: 'https://i.pravatar.cc/300?img=14',
+    productImage:
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1470&auto=format&fit=crop',
+    socialLink: 'https://facebook.com/teacher.somchai',
+    quote: 'การศึกษาคือสิ่งสำคัญที่สุด มาเรียนรู้ไปด้วยกันครับ 🎓',
     displaySeconds: 12,
   },
   {
-    id: 'warp_002',
-    customerName: 'Est',
-    selfDisplayName: 'เอส ⚡',
-    customerAvatar: 'https://i.pravatar.cc/300?img=12',
+    id: 'warp_thai_003',
+    customerName: 'แนท',
+    selfDisplayName: 'แนท เด็กฝึกงาน 🚀',
+    customerAvatar: 'https://i.pravatar.cc/300?img=23',
     productImage:
-      'https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=1469&auto=format&fit=crop',
-    socialLink: 'https://facebook.com/',
-    quote: 'MeGuild x MeeWarp — let\'s glow!',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1470&auto=format&fit=crop',
+    socialLink: 'https://linkedin.com/in/nat-trainee',
+    quote: 'เก็บเกี่ยวประสบการณ์ทุกวัน ขอบคุณที่เป็นแรงบันดาลใจครับ 💪',
     displaySeconds: 10,
   },
   {
-    id: 'warp_003',
-    customerName: 'U17',
-    selfDisplayName: 'U17',
-    customerAvatar: 'https://i.pravatar.cc/300?img=33',
+    id: 'warp_thai_004',
+    customerName: 'บิ๊ก',
+    selfDisplayName: 'พี่บิ๊ก แอดมิน 👨‍💻',
+    customerAvatar: 'https://i.pravatar.cc/300?img=31',
     productImage:
-      'https://images.unsplash.com/photo-1519340241574-2cec6aef0c01?q=80&w=1470&auto=format&fit=crop',
-    socialLink: 'https://t.me/',
-    quote: 'Top 3 today ✅',
+      'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=1476&auto=format&fit=crop',
+    socialLink: 'https://github.com/big-admin',
+    quote: 'เขียนโค้ดทุกวัน ดีบักทุกคืน แต่ก็มีความสุขครับ 😄',
     displaySeconds: 8,
+  },
+  {
+    id: 'warp_thai_005',
+    customerName: 'ครูสมหญิง',
+    selfDisplayName: 'ครูสมหญิง 🌸',
+    customerAvatar: 'https://i.pravatar.cc/300?img=44',
+    productImage:
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1470&auto=format&fit=crop',
+    socialLink: 'https://facebook.com/teacher.somying',
+    quote: 'สอนด้วยใจ เรียนด้วยรัก ขอให้ลูกศิษย์ทุกคนเก่งและดีน้า 💝',
+    displaySeconds: 14,
   },
 ]
 
 const fallbackSupporters: Supporter[] = [
-  { customerName: 'รอการสนับสนุน', totalAmount: 0, customerAvatar: null },
-  { customerName: 'ยังว่างอันดับ 2', totalAmount: 0, customerAvatar: null },
-  { customerName: 'ยังว่างอันดับ 3', totalAmount: 0, customerAvatar: null },
+  { customerName: 'รอคนแรกที่จะขึ้นจอ', totalAmount: 0, customerAvatar: null },
+  { customerName: 'อันดับสองยังว่าง', totalAmount: 0, customerAvatar: null },
+  { customerName: 'อันดับสามยังว่าง', totalAmount: 0, customerAvatar: null },
 ]
 
-// ---------- Component ----------
-const TestPage = () => {
+// ---------- คอมโพเนนต์หลัก ----------
+const TestOnePage = () => {
   const [supporters, setSupporters] = useState<Supporter[]>([])
   const [selfWarpUrl, setSelfWarpUrl] = useState<string>('')
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [currentWarp, setCurrentWarp] = useState<DisplayWarp | null>(null)
   const [countdown, setCountdown] = useState<number>(0)
-  const [imageColors, setImageColors] = useState<{ primary: string; secondary: string } | null>(null,)
+  const [imageColors, setImageColors] = useState<{ primary: string; secondary: string } | null>(null)
   const isFetchingWarpRef = useRef(false)
   const currentWarpRef = useRef<DisplayWarp | null>(null)
   const fetchNextWarpRef = useRef<() => void>(() => { })
@@ -138,7 +164,7 @@ const TestPage = () => {
     currentWarpRef.current = currentWarp
   }, [currentWarp])
 
-  // ---------- Settings (Mock / Real) ----------
+  // ---------- การตั้งค่าระบบ ----------
   useEffect(() => {
     let isMounted = true
 
@@ -148,28 +174,15 @@ const TestPage = () => {
         setSettings(MOCK_SETTINGS)
         return
       }
-      
-      try {
-        const response = await fetch('/api/v1/public/settings')
-        if (!response.ok) throw new Error('Failed to load settings')
-        const data = await response.json()
-        if (isMounted) setSettings(data)
-      } catch {
-        // silent fallback
-      }
     }
 
     fetchSettings()
-
-    // periodic refresh
     const interval = setInterval(fetchSettings, 10000)
 
-    // visibility change
     const handleVisibilityChange = () => {
       if (!document.hidden && isMounted) fetchSettings()
     }
 
-    // storage event
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'settingsUpdated' && isMounted) {
         fetchSettings()
@@ -251,12 +264,12 @@ const TestPage = () => {
           setImageColors({ primary: primaryColor, secondary: secondaryColor })
         }
       } catch (error) {
-        console.error('Error extracting colors:', error)
+        console.error('ข้อผิดพลาดในการดึงสี:', error)
       }
     }
 
     img.onerror = () => {
-      console.error('Error loading image for color extraction')
+      console.error('ไม่สามารถโหลดรูปภาพสำหรับดึงสีได้')
     }
 
     img.src = imageUrl
@@ -272,46 +285,25 @@ const TestPage = () => {
   }, [])
 
   const sanitizeName = useCallback((name: string) => {
-    return name.replace(/[^\u0E00-\u0E7F\u0020-\u007E]/g, '').trim()
+    return name.trim()
   }, [])
 
-  // ---------- Warp Queue (Mock / Real) ----------
+  // ---------- คิววาร์ป ----------
   const fetchNextWarp = useCallback(async () => {
     if (isFetchingWarpRef.current || currentWarpRef.current) return
     isFetchingWarpRef.current = true
 
     try {
       if (MOCK_MODE) {
-        // จำลองหยิบงานจากคิว
         const next = MOCK_WARPS_QUEUE.shift()
         if (next) {
           setCurrentWarp({ ...next })
-          // วนคิวต่อเพื่อให้มีงานไม่หมด
           MOCK_WARPS_QUEUE.push({ ...next, id: next.id + '_' + Date.now() })
         }
         return
       }
-
-      // --- ของจริง (ถูกปิดในโหมด Mock) ---
-      // const response = await fetch(API_ENDPOINTS.displayNext, { method: 'POST' })
-      // if (response.status === 204) return
-      // if (!response.ok) throw new Error('Failed to fetch next warp')
-      // const data = await response.json()
-      // if (data?.id) {
-      //   const displaySeconds = Math.max(1, Number(data.displaySeconds) || 30)
-      //   setCurrentWarp({
-      //     id: data.id,
-      //     customerName: data.customerName || 'Mee Warp',
-      //     customerAvatar: data.customerAvatar || null,
-      //     socialLink: data.socialLink || '',
-      //     quote: data.quote || null,
-      //     displaySeconds,
-      //     productImage: data.metadata?.productImage || null,
-      //     selfDisplayName: data.selfDisplayName || null,
-      //   })
-      // }
     } catch (error) {
-      console.error('Failed to fetch next warp', error)
+      console.error('ไม่สามารถดึงวาร์ปถัดไปได้', error)
     } finally {
       isFetchingWarpRef.current = false
     }
@@ -326,11 +318,9 @@ const TestPage = () => {
     }
 
     try {
-      if (!MOCK_MODE) {
-        // await fetch(API_ENDPOINTS.displayComplete(transactionId), { method: 'POST' })
-      }
+      // สำหรับโหมดจำลอง ไม่ต้องเรียก API
     } catch (error) {
-      console.error('Failed to mark warp as displayed', error)
+      console.error('ไม่สามารถทำเครื่องหมายวาร์ปเสร็จสิ้นได้', error)
     } finally {
       setCurrentWarp(null)
       setCountdown(0)
@@ -362,69 +352,34 @@ const TestPage = () => {
     }
   }, [currentWarp, completeCurrentWarp])
 
-  // ---------- Streams (Mock / Real) ----------
+  // ---------- การเชื่อมต่อข้อมูล ----------
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
     let poller: ReturnType<typeof setInterval> | null = null
 
     const connectMockStreams = () => {
-      // จำลองการแจ้งเตือน queue (เหมือน EventSource displayStream)
       poller = setInterval(() => {
         if (!currentWarpRef.current) fetchNextWarpRef.current?.()
-      }, 5000)
-    }
-
-    const connectRealStreams = () => {
-      // const eventSource = new EventSource(API_ENDPOINTS.displayStream)
-      // eventSource.onmessage = (event) => {
-      //   try {
-      //     const data = JSON.parse(event.data)
-      //     if (!currentWarpRef.current && (data?.queueCount > 0 || data?.current)) {
-      //       fetchNextWarpRef.current?.()
-      //     }
-      //   } catch {}
-      // }
-      // eventSource.onerror = () => {
-      //   eventSource.close()
-      //   if (reconnectTimeout) clearTimeout(reconnectTimeout)
-      //   reconnectTimeout = setTimeout(connectRealStreams, 5000)
-      // }
+      }, 6000) // ทุก 6 วินาที
     }
 
     if (MOCK_MODE) connectMockStreams()
-    else connectRealStreams()
 
-    // ยิงครั้งแรกเมื่อ mount
     fetchNextWarpRef.current?.()
 
     return () => {
-      if (reconnectTimeout) clearTimeout(reconnectTimeout)
       if (poller) clearInterval(poller)
     }
   }, [])
 
-  // ---------- Leaderboard (Mock / Real) ----------
+  // ---------- อันดับผู้สนับสนุน ----------
   useEffect(() => {
     let isMounted = true
     let interval: ReturnType<typeof setInterval> | null = null
 
     if (typeof window !== 'undefined') {
       setSelfWarpUrl(`${window.location.origin}/self-warp`)
-    }
-
-    const normaliseSupporters = (list: unknown): Supporter[] => {
-      if (!Array.isArray(list)) return []
-      return (list as any[])
-        .map((item) => ({
-          customerName: item?.customerName ?? 'Unknown',
-          totalAmount: Number(item?.totalAmount ?? 0),
-          customerAvatar: item?.customerAvatar ?? null,
-          totalSeconds: item?.totalSeconds ? Number(item.totalSeconds) : undefined,
-        }))
-        .filter((entry) => entry.totalAmount > 0)
-        .slice(0, 3)
     }
 
     const fetchInitial = async () => {
@@ -436,49 +391,24 @@ const TestPage = () => {
         setSupporters(top3)
         return
       }
-
-      try {
-        // const response = await fetch(`${API_ENDPOINTS.topSupporters}?limit=3`)
-        // if (!response.ok) throw new Error('Failed to fetch supporters')
-        // const body = await response.json()
-        // if (isMounted) {
-        //   const parsed = normaliseSupporters(body?.supporters)
-        //   if (parsed.length > 0) setSupporters(parsed)
-        // }
-      } catch { }
     }
 
     const setupStream = () => {
       if (MOCK_MODE) {
-        // จำลอง Live leaderboard — สุ่มเพิ่มยอดเงินของหนึ่งคนทุก ๆ 4 วิ
+        // จำลองการอัพเดตอันดับแบบสดๆ
         interval = setInterval(() => {
           if (!isMounted) return
           const pool = [...MOCK_SUPPORTERS_POOL]
           const idx = Math.floor(Math.random() * pool.length)
           pool[idx] = {
             ...pool[idx],
-            totalAmount: pool[idx].totalAmount + [10, 20, 50][Math.floor(Math.random() * 3)],
+            totalAmount: pool[idx].totalAmount + [20, 50, 100, 150][Math.floor(Math.random() * 4)],
           }
           pool.sort((a, b) => b.totalAmount - a.totalAmount)
           setSupporters(pool.slice(0, 3))
-        }, 4000)
+        }, 5000) // ทุก 5 วินาที
         return
       }
-
-      // ของจริง (EventSource) ถูกปิดในโหมด Mock
-      // const eventSource = new EventSource(API_ENDPOINTS.leaderboardStream)
-      // eventSource.onmessage = (event) => {
-      //   if (!isMounted) return
-      //   try {
-      //     const payload = JSON.parse(event.data)
-      //     const parsed = normaliseSupporters(payload?.supporters)
-      //     if (parsed.length > 0) setSupporters(parsed)
-      //   } catch {}
-      // }
-      // eventSource.onerror = () => {
-      //   eventSource.close()
-      //   setTimeout(setupStream, 5000)
-      // }
     }
 
     fetchInitial()
@@ -498,7 +428,7 @@ const TestPage = () => {
     return (
       resolveMediaSource(currentWarp.productImage) ||
       resolveMediaSource(currentWarp.customerAvatar) ||
-      `https://ui-avatars.com/api/?background=1e1b4b&color=fff&name=${encodeURIComponent(
+      `https://ui-avatars.com/api/?background=1e40af&color=fff&name=${encodeURIComponent(
         currentWarp.customerName,
       )}`
     )
@@ -528,8 +458,8 @@ const TestPage = () => {
     return imageUrl
   }, [settings?.backgroundImage, resolveMediaSource, extractImageColors])
 
-  const defaultPrimary = '#6366f1'
-  const defaultSecondary = '#f472b6'
+  const defaultPrimary = '#1e40af'
+  const defaultSecondary = '#ec4899'
   const gradientPrimary = imageColors?.primary || defaultPrimary
   const gradientSecondary = imageColors?.secondary || defaultSecondary
 
@@ -549,99 +479,73 @@ const TestPage = () => {
 
   return (
     <div
-      className="relative flex min-h-screen w-screen overflow-hidden bg-slate-950 text-slate-100"
-      style={
-        backgroundImage
-          ? {
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundColor: gradientPrimary || '#0f172a',
-            backgroundClip: 'padding-box',
-            backgroundOrigin: 'padding-box',
-            backgroundAttachment: 'fixed',
-          }
-          : undefined
-      }
+      className={`relative flex min-h-screen w-screen overflow-hidden text-slate-100
+    ${backgroundImage
+          ? `bg-[url('${backgroundImage}')] bg-cover bg-center bg-no-repeat bg-fixed`
+          : 'bg-blue-950'
+        }`}
+      style={!backgroundImage ? { backgroundColor: gradientPrimary || '#1e3a8a' } : {}}
     >
-      {/* Blurred background image overlay */}
+      {/* พื้นหลังเบลอ */}
       {backgroundImage && (
         <div
-          className="pointer-events-none fixed inset-0 -z-20"
-          style={{
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            filter: 'blur(20px)',
-            transform: 'scale(1.05)',
-            opacity: 0.25,
-            backgroundClip: 'padding-box',
-            backgroundOrigin: 'padding-box',
-          }}
+          className={`
+          pointer-events-none fixed inset-0 -z-20
+          bg-cover bg-center bg-no-repeat
+          blur-[15px] scale-[1.05] opacity-30
+          [background-clip:padding-box] [background-origin:padding-box]
+        `}
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+        />
+      )}
+      {/* เลเยอร์การไล่สี */}
+      {backgroundImage && (
+        <div
+          className={`
+            pointer-events-none fixed inset-0 -z-20
+            bg-radial-gradient-ellipse from-transparent via-transparent to-[${toRgba(gradientPrimary, 0.85)}]
+            opacity-90
+          `}
         />
       )}
 
-      {/* Smooth edge transition overlay */}
-      {backgroundImage && (
-        <div
-          className="pointer-events-none fixed inset-0 -z-20"
-          style={{
-            background: `radial-gradient(ellipse at center, transparent 0%, transparent 40%, ${toRgba(
-              gradientPrimary,
-              0.9,
-            )} 70%, ${toRgba(gradientPrimary, 1)} 100%)`,
-            opacity: 0.8,
-          }}
-        />
-      )}
-
-      {/* Gradient backdrops tuned to the hero palette (works with or without an uploaded image) */}
+      {/* พื้นหลังไล่สีพื้นฐาน */}
       <div
-        className="pointer-events-none fixed inset-0 -z-30 opacity-70"
-        style={{
-          background: `radial-gradient(120% 120% at 15% 20%, ${toRgba(
-            gradientPrimary,
-            0.55,
-          )} 0%, transparent 70%), radial-gradient(120% 120% at 85% 80%, ${toRgba(
-            gradientSecondary,
-            0.5,
-          )} 0%, transparent 72%)`,
-        }}
+        className={`
+          pointer-events-none fixed inset-0 -z-30 opacity-75
+          bg-radial-gradient-ellipse from-[${toRgba(gradientPrimary, 0.6)}] via-transparent to-transparent
+        `}
       />
       <div
-        className="pointer-events-none fixed inset-0 -z-30 opacity-60 mix-blend-screen"
-        style={{
-          background: `radial-gradient(140% 140% at 50% 120%, ${toRgba(
-            gradientSecondary,
-            0.35,
-          )} 0%, transparent 65%)`,
-        }}
+        className={`
+          pointer-events-none fixed inset-0 -z-30 opacity-65 mix-blend-screen
+          bg-radial-gradient-ellipse from-[${toRgba(gradientSecondary, 0.4)}] via-transparent to-transparent
+        `}
       />
 
-      {currentWarp ? (
+      {/* หน้าจอแสดงวาร์ป */}
+      {/* {currentWarp ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
-          <div className="pointer-events-auto w-full max-w-[800px] lg:max-w-[1200px] xl:max-w-[1400px] rounded-[32px] border-2 border-emerald-400/20 bg-gradient-to-br from-white/15 to-emerald-500/5 p-6 shadow-[0_40px_120px_rgba(20,20,40,0.65)] backdrop-blur-2xl sm:p-10 lg:p-16 xl:p-20 ring-4 ring-emerald-400/10">
+          <div className="pointer-events-auto w-full max-w-[800px] lg:max-w-[1200px] xl:max-w-[1400px] rounded-[32px] border-2 border-blue-400/25 bg-gradient-to-br from-white/20 to-blue-500/10 p-6 shadow-[0_40px_120px_rgba(30,64,175,0.7)] backdrop-blur-2xl sm:p-10 lg:p-16 xl:p-20 ring-4 ring-blue-400/15">
             <div className="grid gap-6 sm:gap-8 lg:gap-10 xl:gap-12 sm:grid-cols-[350px_1fr] lg:grid-cols-[450px_1fr] xl:grid-cols-[550px_1fr] sm:items-start">
               <div className="space-y-4">
-                <div className="relative aspect-square overflow-hidden rounded-[24px] border-4 border-emerald-400/60 bg-slate-900/60 shadow-[0_35px_100px_rgba(15,23,42,0.75)] ring-8 ring-emerald-400/30 sm:rounded-[32px] transform hover:scale-[1.02] transition-all duration-500">
+                <div className="relative aspect-square overflow-hidden rounded-[24px] border-4 border-blue-400/70 bg-blue-900/60 shadow-[0_35px_100px_rgba(30,64,175,0.8)] ring-8 ring-blue-400/40 sm:rounded-[32px] transform hover:scale-[1.02] transition-all duration-500">
                   {warpImage ? (
                     <img src={warpImage as string} alt={currentWarp.customerName} className="h-full w-full object-cover transition-transform duration-500 hover:scale-110" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-slate-900/70 text-slate-100">
-                      MeeWarp
+                    <div className="flex h-full w-full items-center justify-center bg-blue-900/70 text-slate-100">
+                      มีวาร์ป
                     </div>
                   )}
-                  <span className="absolute left-4 top-4 lg:left-6 lg:top-6 xl:left-8 xl:top-8 rounded-full bg-emerald-500/90 backdrop-blur-sm px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-sm lg:text-base xl:text-lg font-bold uppercase tracking-[0.3em] text-white shadow-xl ring-2 ring-emerald-300/50">
+                  <span className="absolute left-4 top-4 lg:left-6 lg:top-6 xl:left-8 xl:top-8 rounded-full bg-blue-500/95 backdrop-blur-sm px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-sm lg:text-base xl:text-lg font-bold text-white shadow-xl ring-2 ring-blue-300/60">
                     {countdownLabel}
                   </span>
-                  <div className="absolute inset-0 rounded-[24px] bg-gradient-to-t from-emerald-900/30 via-transparent to-emerald-500/10 pointer-events-none sm:rounded-[32px]"></div>
-                  <div className="absolute inset-0 rounded-[24px] ring-2 ring-emerald-400/20 pointer-events-none sm:rounded-[32px]"></div>
+                  <div className="absolute inset-0 rounded-[24px] bg-gradient-to-t from-blue-900/35 via-transparent to-blue-500/15 pointer-events-none sm:rounded-[32px]"></div>
+                  <div className="absolute inset-0 rounded-[24px] ring-2 ring-blue-400/25 pointer-events-none sm:rounded-[32px]"></div>
                 </div>
                 {currentWarp.quote ? (
-                  <div className="rounded-xl border border-emerald-400/20 bg-gradient-to-r from-emerald-500/5 to-emerald-600/5 p-4 lg:p-5 xl:p-6 backdrop-blur-sm">
-                    <p className="text-sm lg:text-base xl:text-lg font-medium text-emerald-100 italic text-center leading-relaxed line-clamp-3">
+                  <div className="rounded-xl border border-blue-400/25 bg-gradient-to-r from-blue-500/10 to-blue-600/10 p-4 lg:p-5 xl:p-6 backdrop-blur-sm">
+                    <p className="text-sm lg:text-base xl:text-lg font-medium text-blue-100 italic text-center leading-relaxed line-clamp-3">
                       "{currentWarp.quote}"
                     </p>
                   </div>
@@ -649,7 +553,7 @@ const TestPage = () => {
               </div>
               <div className="space-y-4 lg:space-y-5 xl:space-y-6 text-left">
                 <div className="min-w-0">
-                  <p className="text-sm lg:text-base xl:text-lg uppercase tracking-[0.4em] text-emerald-300 font-bold">Warp Spotlight</p>
+                  <p className="text-sm lg:text-base xl:text-lg uppercase tracking-[0.4em] text-blue-300 font-bold">คนดังประจำวัน</p>
                   <h2
                     className="mt-3 text-[clamp(2rem,8vw,7rem)] font-black text-white drop-shadow-lg truncate max-w-full"
                     title={currentWarp.selfDisplayName || currentWarp.customerName}
@@ -658,47 +562,48 @@ const TestPage = () => {
                   </h2>
                 </div>
                 {currentWarp.socialLink ? (
-                  <div className="flex flex-col items-center gap-2 lg:gap-3 xl:gap-4 rounded-xl border border-emerald-400/20 bg-gradient-to-br from-emerald-500/5 to-emerald-600/5 p-3 lg:p-4 xl:p-5 backdrop-blur-sm">
-                    <div className="h-16 w-16 lg:h-20 lg:w-20 xl:h-24 xl:w-24 overflow-hidden rounded-lg border border-emerald-400/30 bg-white/95 shadow-[0_8px_25px_rgba(16,185,129,0.2)]">
+                  <div className="flex flex-col items-center gap-2 lg:gap-3 xl:gap-4 rounded-xl border border-blue-400/25 bg-gradient-to-br from-blue-500/10 to-blue-600/10 p-3 lg:p-4 xl:p-5 backdrop-blur-sm">
+                    <div className="h-16 w-16 lg:h-20 lg:w-20 xl:h-24 xl:w-24 overflow-hidden rounded-lg border border-blue-400/40 bg-white/95 shadow-[0_8px_25px_rgba(59,130,246,0.3)]">
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(currentWarp.socialLink)}`}
-                        alt="QR Code สำหรับลิงก์โซเชียล"
+                        alt="คิวอาร์โค้ดสำหรับลิงก์โซเชียล"
                         className="h-full w-full object-contain"
                       />
                     </div>
-                    <p className="text-xs lg:text-sm font-medium text-emerald-200 text-center">สแกนเพื่อไปยังลิงก์โซเชียล</p>
+                    <p className="text-xs lg:text-sm font-medium text-blue-200 text-center">สแกนเพื่อติดตาม</p>
                   </div>
                 ) : null}
-                <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 rounded-2xl border-2 border-emerald-400/20 bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 p-5 lg:p-6 xl:p-8 backdrop-blur-sm">
-                  <div className="rounded-xl border border-emerald-400/60 bg-emerald-500/25 px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-xs lg:text-sm xl:text-base uppercase tracking-[0.3em] text-emerald-100 font-bold shadow-lg ring-2 ring-emerald-400/30">
-                    Time Left
+                <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 rounded-2xl border-2 border-blue-400/25 bg-gradient-to-r from-blue-500/15 to-blue-600/10 p-5 lg:p-6 xl:p-8 backdrop-blur-sm">
+                  <div className="rounded-xl border border-blue-400/70 bg-blue-500/30 px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-xs lg:text-sm xl:text-base uppercase tracking-[0.3em] text-blue-100 font-bold shadow-lg ring-2 ring-blue-400/40">
+                    เวลาที่เหลือ
                   </div>
-                  <span className="text-2xl lg:text-4xl xl:text-5xl font-bold text-emerald-100 drop-shadow-lg">{countdownLabel}</span>
+                  <span className="text-2xl lg:text-4xl xl:text-5xl font-bold text-blue-100 drop-shadow-lg">{countdownLabel}</span>
                 </div>
-                <p className="text-sm lg:text-base xl:text-lg font-medium text-slate-200 bg-white/5 rounded-xl px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-center">
-                  เวลาที่ซื้อไว้ทั้งหมด <span className="text-emerald-300 font-bold">{totalDurationLabel}</span>
+                <p className="text-sm lg:text-base xl:text-lg font-medium text-slate-200 bg-white/10 rounded-xl px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-center">
+                  เวลาที่ซื้อทั้งหมด <span className="text-blue-300 font-bold">{totalDurationLabel}</span>
                 </p>
               </div>
             </div>
           </div>
         </div>
-      ) : null}
+      ) : null} */}
 
+      {/* หัวข้อหลัก */}
       <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-[5vw]">
         <div className="flex max-w-[60vw] lg:max-w-[70vw] xl:max-w-[80vw] flex-col items-center text-center">
-          <span className="mb-4 text-[clamp(16px,1.3vw,24px)] lg:text-2xl xl:text-3xl uppercase tracking-[0.5em] text-indigo-300">
+          <span className="mb-4 text-[clamp(16px,1.3vw,24px)] lg:text-2xl xl:text-3xl uppercase tracking-[0.5em] text-blue-300">
             {tagline}
           </span>
-          <h1 className="font-display text-[clamp(72px,10vw,160px)] lg:text-[180px] xl:text-[220px] font-black uppercase leading-none text-white drop-shadow-[0_0_35px_rgba(99,102,241,0.55)]">
+          <h1 className="font-display text-[clamp(72px,10vw,160px)] lg:text-[180px] xl:text-[220px] font-black leading-none text-white drop-shadow-[0_0_35px_rgba(59,130,246,0.6)]">
             {brandName}
           </h1>
         </div>
       </div>
 
-      {/* Bottom-left QR Code Section */}
+      {/* คิวอาร์โค้ดสำหรับแจกวาร์ป */}
       <div className="pointer-events-auto absolute left-[2vw] bottom-[2vh] z-10 max-w-[85vw] sm:left-[4vw] sm:bottom-[4vh] rounded-3xl p-[1.6vw] lg:p-[2vw] xl:p-[2.5vw] backdrop-blur">
         <div className="flex items-center gap-4 lg:gap-6 xl:gap-8">
-          <div className="h-[12vw] w-[12vw] min-h-[100px] min-w-[100px] max-h-[180px] max-w-[160px] lg:max-w-[200px] xl:max-w-[240px] overflow-hidden rounded-2xl p-2 lg:p-4 xl:p-5 shadow-[0_35px_100px_rgba(15,23,42,0.55)] backdrop-blur">
+          <div className="h-[12vw] w-[12vw] min-h-[100px] min-w-[100px] max-h-[180px] max-w-[160px] lg:max-w-[200px] xl:max-w-[240px] overflow-hidden rounded-2xl p-2 lg:p-4 xl:p-5 shadow-[0_35px_100px_rgba(30,64,175,0.6)] backdrop-blur">
             {selfWarpUrl ? (
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(selfWarpUrl)}`}
@@ -709,24 +614,24 @@ const TestPage = () => {
           </div>
           <div className="flex-1 max-w-[60vw]">
             <p className="text-[clamp(12px,1.1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">สแกนเพื่อแจกวาร์ป</p>
-            <p className="mt-1 text-[clamp(10px,0.9vw,16px)] lg:text-lg xl:text-xl text-slate-300">เลือกเวลาและชำระเงินได้ทันที</p>
+            <p className="mt-1 text-[clamp(10px,0.9vw,16px)] lg:text-lg xl:text-xl text-slate-300">เลือกเวลา ชำระเงิน ขึ้นจอได้ทันที</p>
           </div>
         </div>
       </div>
 
-      {/* Leaderboard */}
-      <div className="pointer-events-auto absolute right-[4vw] top-[6vh] w-[25vw] min-w-[260px] max-w-[320px] lg:max-w-[400px] xl:max-w-[480px] rounded-2xl border border-white/10 bg-white/10 p-4 lg:p-6 xl:p-8 shadow-[0_25px_60px_rgba(15,23,42,0.45)] backdrop-blur">
+      {/* อันดับผู้สนับสนุน */}
+      <div className="pointer-events-auto absolute right-[4vw] top-[6vh] w-[25vw] min-w-[260px] max-w-[320px] lg:max-w-[400px] xl:max-w-[480px] rounded-2xl border border-white/15 bg-white/10 p-4 lg:p-6 xl:p-8 shadow-[0_25px_60px_rgba(30,64,175,0.5)] backdrop-blur">
         <div className="flex items-center justify-between">
-          <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">Warp Hall of Fame</h3>
-          <span className="rounded-full bg-white/10 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
-            {supporters.length > 0 ? 'Live' : 'Standby'}
+          <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">ฮอลล์ออฟเฟม</h3>
+          <span className="rounded-full bg-white/15 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
+            {supporters.length > 0 ? 'สด' : 'รอ'}
           </span>
         </div>
         <ul className="mt-4 lg:mt-6 xl:mt-8 space-y-3 lg:space-y-4 xl:space-y-5">
           {supportersToDisplay.map((supporter, index) => {
             const avatarUrl =
               resolveMediaSource(supporter.customerAvatar) ||
-              `https://ui-avatars.com/api/?background=312e81&color=fff&name=${encodeURIComponent(
+              `https://ui-avatars.com/api/?background=1e40af&color=fff&name=${encodeURIComponent(
                 supporter.customerName,
               )}`
             const isPlaceholder = supporter.totalAmount <= 0
@@ -738,9 +643,9 @@ const TestPage = () => {
                   <img
                     src={avatarUrl as string}
                     alt={supporter.customerName}
-                    className="h-[2.8vw] w-[2.8vw] min-h-[44px] min-w-[44px] max-h-[52px] max-w-[52px] lg:min-h-[56px] lg:min-w-[56px] lg:max-h-[64px] lg:max-w-[64px] xl:min-h-[68px] xl:min-w-[68px] xl:max-h-[76px] xl:max-w-[76px] rounded-full border border-white/20 object-cover"
+                    className="h-[2.8vw] w-[2.8vw] min-h-[44px] min-w-[44px] max-h-[52px] max-w-[52px] lg:min-h-[56px] lg:min-w-[56px] lg:max-h-[64px] lg:max-w-[64px] xl:min-h-[68px] xl:min-w-[68px] xl:max-h-[76px] xl:max-w-[76px] rounded-full border border-white/25 object-cover"
                   />
-                  <span className="absolute -left-2 -top-2 flex h-[1.8vw] w-[1.8vw] min-h-[28px] min-w-[28px] lg:min-h-[32px] lg:min-w-[32px] xl:min-h-[36px] xl:min-w-[36px] items-center justify-center rounded-full bg-indigo-500 text-[clamp(10px,0.7vw,14px)] lg:text-base xl:text-lg font-semibold text-white">
+                  <span className="absolute -left-2 -top-2 flex h-[1.8vw] w-[1.8vw] min-h-[28px] min-w-[28px] lg:min-h-[32px] lg:min-w-[32px] xl:min-h-[36px] xl:min-w-[36px] items-center justify-center rounded-full bg-blue-500 text-[clamp(10px,0.7vw,14px)] lg:text-base xl:text-lg font-semibold text-white">
                     #{index + 1}
                   </span>
                 </div>
@@ -754,14 +659,14 @@ const TestPage = () => {
             )
           })}
         </ul>
-        <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/10 bg-white/10 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200">
+        <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/15 bg-white/10 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200">
           {supporters.length > 0
-            ? 'เพิ่มเวลาวาร์ปของคุณเพื่อรักษาอันดับบนจอหลัก'
-            : 'ยังไม่มีใครขึ้นจอ ลองเป็นคนแรกที่ปล่อยวาร์ปดูไหม?'}
+            ? 'เพิ่มเวลาวาร์ปเพื่อรักษาอันดับบนจอใหญ่'
+            : 'ยังไม่มีใครขึ้นจอ มาเป็นคนแรกกันเถอะ!'}
         </div>
       </div>
     </div>
   )
 }
 
-export default TestPage
+export default TestOnePage
