@@ -23,6 +23,7 @@ import TestOnePage from './pages/testOne';
 import TestTwoPage from './pages/testTwo';
 import TestThreePage from './pages/testThree';
 import TestFourPage from './pages/testFour';
+import TestFivePage from './pages/testFive';
 
 const AppRoutes = () => (
   <Routes>
@@ -32,6 +33,7 @@ const AppRoutes = () => (
     <Route path="/testTwo" element={<TestTwoPage />} />
     <Route path="/testThree" element={<TestThreePage />} />
     <Route path="/testFour" element={<TestFourPage />} />
+    <Route path="/testFive" element={<TestFivePage />} />
     <Route path="/admin/login" element={<AdminLoginPage />} />
     <Route element={<AdminGuard />}>
       <Route path="/admin" element={<AdminLayout />}>

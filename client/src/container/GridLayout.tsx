@@ -7,20 +7,25 @@ type GridLayoutProps = PropsWithChildren<{
   cols?: number;
   gap?: number;
   showGrid?: boolean;
-  showIndex?: boolean; // ✅ แสดงลำดับช่อง
+  showIndex?: boolean;
+  devMode?: boolean;
+  devLineColor?: string;
   className?: string;
   style?: React.CSSProperties;
 }>;
 
-const GridMetaCtx = createContext<{ rows: number; cols: number }>({ rows: 2, cols: 12 });
+// ---------- Context ----------
+type GridMeta = { rows: number; cols: number; devMode: boolean; devLineColor: string };
+const GridMetaCtx = createContext<GridMeta>({ rows: 2, cols: 12, devMode: false, devLineColor: "rgba(59,130,246,0.28)" });
 export const useGridMeta = () => useContext(GridMetaCtx);
 
 export function GridLayout({
   rows = 2,
   cols = 12,
   gap = 8,
-  showGrid = true,
   showIndex = false,
+  devMode = false,
+  devLineColor = "rgba(59,130,246,0.28)", // blue-500 @ ~28%
   className = "",
   style,
   children,
@@ -31,16 +36,22 @@ export function GridLayout({
     ["--gap" as any]: `${gap}px`,
   };
 
+  // 🔧 กติกา devMode:
+  // - ถ้า devMode=true => บังคับโชว์กริด (สี devLineColor) และโชว์เลข index
+  // - ถ้า devMode=false => พื้นหลังโปร่งใส (ไม่โชว์กริด) แต่ showIndex ยังเปิดได้เอง
+  const gridVisible = devMode ? true : false;         // override: ปิดเสมอถ้าไม่ dev
+  const indexVisible = devMode ? true : showIndex;    // เปิดอัตโนมัติเมื่อ dev
+
   return (
     <div
-      className={`relative rounded-lg border border-black/10 h-full ${className}`}
+      className={`relative rounded-lg border ${devMode ? "border-black/10" : "border-white/0"} h-full ${className}`}
       style={{
         isolation: "isolate",
         contain: "layout style paint",
         ...style,
       }}
     >
-      <GridMetaCtx.Provider value={{ rows, cols }}>
+      <GridMetaCtx.Provider value={{ rows, cols, devMode, devLineColor }}>
         <div
           className="relative grid h-full w-full"
           style={{
@@ -51,7 +62,8 @@ export function GridLayout({
             gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
           }}
         >
-          {showGrid && (
+          {/* 🧰 เส้นกริด (โชว์เฉพาะตอน devMode) */}
+          {gridVisible && (
             <span
               aria-hidden
               className="pointer-events-none absolute inset-0 block"
@@ -63,8 +75,8 @@ export function GridLayout({
                     to bottom,
                     transparent,
                     transparent calc(var(--ch)),
-                    rgba(0,0,0,0.12) calc(var(--ch)),
-                    rgba(0,0,0,0.12) calc(var(--ch) + 1px),
+                    ${devLineColor} calc(var(--ch)),
+                    ${devLineColor} calc(var(--ch) + 1px),
                     transparent calc(var(--ch) + 1px),
                     transparent calc(var(--ch) + 1px + var(--gap))
                   ),
@@ -72,8 +84,8 @@ export function GridLayout({
                     to right,
                     transparent,
                     transparent calc(var(--cw)),
-                    rgba(0,0,0,0.12) calc(var(--cw)),
-                    rgba(0,0,0,0.12) calc(var(--cw) + 1px),
+                    ${devLineColor} calc(var(--cw)),
+                    ${devLineColor} calc(var(--cw) + 1px),
                     transparent calc(var(--cw) + 1px),
                     transparent calc(var(--cw) + 1px + var(--gap))
                   )
@@ -84,22 +96,23 @@ export function GridLayout({
             />
           )}
 
-          {/* ✅ overlay ตัวเลข index */}
-          {showIndex &&
+          {/* 🔢 เลขลำดับช่อง (เปิดอัตโนมัติเมื่อ devMode) */}
+          {indexVisible &&
             Array.from({ length: rows * cols }).map((_, i) => {
               const r = Math.floor(i / cols) + 1;
               const c = (i % cols) + 1;
               return (
                 <div
                   key={i}
-                  className="pointer-events-none flex items-center justify-center text-[10px] text-gray-500"
+                  className="pointer-events-none flex items-center justify-center text-[10px]"
                   style={{
                     gridRow: r,
                     gridColumn: c,
-                    border: "1px dashed rgba(0,0,0,0.1)",
+                    color: devMode ? "#1e3a8a" : "rgba(0,0,0,0.5)", // เข้มขึ้นเล็กน้อยตอน dev
+                    border: devMode ? "1px dashed rgba(59,130,246,0.35)" : "none",
                   }}
                 >
-                  r{r},c{c}
+                 {devMode ? `r${r},c${c}` : ``}
                 </div>
               );
             })}
@@ -110,7 +123,6 @@ export function GridLayout({
     </div>
   );
 }
-
 
 type BoxProps = {
   /** จุดเริ่ม (นับจาก 1) */
@@ -140,37 +152,30 @@ export function Box({
   frameStyle,
   children,
 }: BoxProps) {
-  const { rows, cols } = useGridMeta();
+  const { rows, cols, devMode, devLineColor } = useGridMeta();
 
-  // 1) clamp จุดเริ่มให้อยู่ในกรอบ
   const sr = clamp(startRow, 1, rows);
   const sc = clamp(startCol, 1, cols);
-
-  // 2) จำกัด span สูงสุดตามพื้นที่ที่เหลือ
   const maxRowSpan = rows - (sr - 1);
   const maxColSpan = cols - (sc - 1);
-
-  // 3) หักส่วนเกิน
   const rs = clamp(rowSpan, 1, maxRowSpan);
   const cs = clamp(colSpan, 1, maxColSpan);
 
   return (
-    // เฟรม: คุมตำแหน่งในกริดเท่านั้น ไม่รับ className ของเนื้อใน
     <div
-      className={`box-frame relative`}
+      className="box-frame relative"
       style={{
         gridRow: `${sr} / span ${rs}`,
         gridColumn: `${sc} / span ${cs}`,
-        margin: 0,               // กัน margin เนื้อในไหลไปกระทบเลย์เอาต์กริด
+        margin: 0,
         padding: 0,
-        minWidth: 0,             // กัน overflow ของเนื้อในทำให้ track กว้าง
+        minWidth: 0,
         minHeight: 0,
         ...frameStyle,
       }}
     >
-      {/* เนื้อใน: ใส่ className/ style ตามใจ ไม่กระทบกริด/คอนเทนเนอร์ */}
       <div
-        className={`box-inner rounded-md border border-black/10 bg-white/70 backdrop-blur-sm p-3 text-sm ${className}`}
+        className={`box-inner rounded-md border ${devMode ? "border-black/10 bg-white/70 backdrop-blur-sm" : "border-white/0"} text-sm ${className}`}
         style={{
           width: "100%",
           height: "100%",
@@ -181,8 +186,12 @@ export function Box({
         {children}
       </div>
 
-      {/* เผื่ออยากสไตล์ที่เฟรมจริง ๆ */}
-      {frameClassName ? <div className={frameClassName} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} /> : null}
+      {frameClassName ? (
+        <div
+          className={frameClassName}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+        />
+      ) : null}
     </div>
   );
 }
