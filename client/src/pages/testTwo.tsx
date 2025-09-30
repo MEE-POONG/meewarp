@@ -140,7 +140,7 @@ const fallbackSupporters: Supporter[] = [
 ]
 
 // ---------- คอมโพเนนต์หลัก ----------
-const TestOnePage = () => {
+const TestTwoPage = () => {
   const [supporters, setSupporters] = useState<Supporter[]>([])
   const [selfWarpUrl, setSelfWarpUrl] = useState<string>('')
   const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -571,4 +571,4 @@ const TestOnePage = () => {
   )
 }
 
-export default TestOnePage
+export default TestTwoPage
