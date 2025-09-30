@@ -7,34 +7,34 @@ type GridLayoutProps = PropsWithChildren<{
   cols?: number;
   gap?: number;
   showGrid?: boolean;
+  showIndex?: boolean; // ✅ แสดงลำดับช่อง
   className?: string;
   style?: React.CSSProperties;
 }>;
 
-// --- Context: ให้ Box รู้ขนาดกริดเพื่อ clamp ---
 const GridMetaCtx = createContext<{ rows: number; cols: number }>({ rows: 2, cols: 12 });
-const useGridMeta = () => useContext(GridMetaCtx);
+export const useGridMeta = () => useContext(GridMetaCtx);
 
 export function GridLayout({
   rows = 2,
   cols = 12,
   gap = 8,
   showGrid = true,
+  showIndex = false,
   className = "",
   style,
   children,
 }: GridLayoutProps) {
   const cssVars: React.CSSProperties = {
-    ['--rows' as any]: rows,
-    ['--cols' as any]: cols,
-    ['--gap'  as any]: `${gap}px`,
+    ["--rows" as any]: rows,
+    ["--cols" as any]: cols,
+    ["--gap" as any]: `${gap}px`,
   };
 
   return (
     <div
       className={`relative rounded-lg border border-black/10 h-full ${className}`}
       style={{
-        // กันผลข้างเคียงจากสไตล์ลูก
         isolation: "isolate",
         contain: "layout style paint",
         ...style,
@@ -56,8 +56,8 @@ export function GridLayout({
               aria-hidden
               className="pointer-events-none absolute inset-0 block"
               style={{
-                ['--cw' as any]: `calc((100% - ( (var(--cols) - 1) * var(--gap) )) / var(--cols))`,
-                ['--ch' as any]: `calc((100% - ( (var(--rows) - 1) * var(--gap) )) / var(--rows))`,
+                ["--cw" as any]: `calc((100% - ( (var(--cols) - 1) * var(--gap) )) / var(--cols))`,
+                ["--ch" as any]: `calc((100% - ( (var(--rows) - 1) * var(--gap) )) / var(--rows))`,
                 backgroundImage: `
                   repeating-linear-gradient(
                     to bottom,
@@ -84,12 +84,33 @@ export function GridLayout({
             />
           )}
 
+          {/* ✅ overlay ตัวเลข index */}
+          {showIndex &&
+            Array.from({ length: rows * cols }).map((_, i) => {
+              const r = Math.floor(i / cols) + 1;
+              const c = (i % cols) + 1;
+              return (
+                <div
+                  key={i}
+                  className="pointer-events-none flex items-center justify-center text-[10px] text-gray-500"
+                  style={{
+                    gridRow: r,
+                    gridColumn: c,
+                    border: "1px dashed rgba(0,0,0,0.1)",
+                  }}
+                >
+                  r{r},c{c}
+                </div>
+              );
+            })}
+
           {children}
         </div>
       </GridMetaCtx.Provider>
     </div>
   );
 }
+
 
 type BoxProps = {
   /** จุดเริ่ม (นับจาก 1) */

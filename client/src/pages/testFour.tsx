@@ -479,7 +479,7 @@ const TestFourPage = () => {
 
   return (
     <div className="h-screen p-4">
-      <GridLayout rows={6} cols={8} gap={8} showGrid style={{ height: "100%" }}>
+      <GridLayout rows={6} cols={8} gap={8} showGrid showIndex style={{ height: "100%" }}>
         {/* startRow=2, rowSpan=15 -> จะถูกหักเหลือ 9 อัตโนมัติ */}
         <Box startRow={1} startCol={1} rowSpan={15} colSpan={2}>
           foodmenu
