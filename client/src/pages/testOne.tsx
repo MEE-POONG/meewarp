@@ -479,79 +479,52 @@ const TestOnePage = () => {
 
   return (
     <div
-      className="relative flex min-h-screen w-screen overflow-hidden bg-blue-950 text-slate-100"
-      style={
-        backgroundImage
-          ? {
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundColor: gradientPrimary || '#1e3a8a',
-            backgroundClip: 'padding-box',
-            backgroundOrigin: 'padding-box',
-            backgroundAttachment: 'fixed',
-          }
-          : undefined
-      }
+      className={`relative flex min-h-screen w-screen overflow-hidden text-slate-100
+    ${backgroundImage
+          ? `bg-[url('${backgroundImage}')] bg-cover bg-center bg-no-repeat bg-fixed`
+          : 'bg-blue-950'
+        }`}
+      style={!backgroundImage ? { backgroundColor: gradientPrimary || '#1e3a8a' } : {}}
     >
       {/* พื้นหลังเบลอ */}
       {backgroundImage && (
         <div
-          className="pointer-events-none fixed inset-0 -z-20"
-          style={{
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            filter: 'blur(15px)',
-            transform: 'scale(1.05)',
-            opacity: 0.3,
-            backgroundClip: 'padding-box',
-            backgroundOrigin: 'padding-box',
-          }}
+          className={`
+          pointer-events-none fixed inset-0 -z-20
+          bg-cover bg-center bg-no-repeat
+          blur-[15px] scale-[1.05] opacity-30
+          [background-clip:padding-box] [background-origin:padding-box]
+        `}
+          style={{ backgroundImage: `url(${backgroundImage})` }}
         />
       )}
-
       {/* เลเยอร์การไล่สี */}
       {backgroundImage && (
         <div
-          className="pointer-events-none fixed inset-0 -z-20"
-          style={{
-            background: `radial-gradient(ellipse at center, transparent 0%, transparent 35%, ${toRgba(
-              gradientPrimary,
-              0.85,
-            )} 65%, ${toRgba(gradientPrimary, 1)} 100%)`,
-            opacity: 0.9,
-          }}
+          className={`
+            pointer-events-none fixed inset-0 -z-20
+            bg-radial-gradient-ellipse from-transparent via-transparent to-[${toRgba(gradientPrimary, 0.85)}]
+            opacity-90
+          `}
         />
       )}
 
       {/* พื้นหลังไล่สีพื้นฐาน */}
       <div
-        className="pointer-events-none fixed inset-0 -z-30 opacity-75"
-        style={{
-          background: `radial-gradient(120% 120% at 20% 15%, ${toRgba(
-            gradientPrimary,
-            0.6,
-          )} 0%, transparent 65%), radial-gradient(120% 120% at 80% 85%, ${toRgba(
-            gradientSecondary,
-            0.55,
-          )} 0%, transparent 70%)`,
-        }}
+        className={`
+          pointer-events-none fixed inset-0 -z-30 opacity-75
+          bg-radial-gradient-ellipse from-[${toRgba(gradientPrimary, 0.6)}] via-transparent to-transparent
+        `}
       />
       <div
-        className="pointer-events-none fixed inset-0 -z-30 opacity-65 mix-blend-screen"
-        style={{
-          background: `radial-gradient(140% 140% at 50% 110%, ${toRgba(
-            gradientSecondary,
-            0.4,
-          )} 0%, transparent 60%)`,
-        }}
+        className={`
+          pointer-events-none fixed inset-0 -z-30 opacity-65 mix-blend-screen
+          bg-radial-gradient-ellipse from-[${toRgba(gradientSecondary, 0.4)}] via-transparent to-transparent
+        `}
       />
 
       {/* หน้าจอแสดงวาร์ป */}
-      {currentWarp ? (
+      {/* {currentWarp ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
           <div className="pointer-events-auto w-full max-w-[800px] lg:max-w-[1200px] xl:max-w-[1400px] rounded-[32px] border-2 border-blue-400/25 bg-gradient-to-br from-white/20 to-blue-500/10 p-6 shadow-[0_40px_120px_rgba(30,64,175,0.7)] backdrop-blur-2xl sm:p-10 lg:p-16 xl:p-20 ring-4 ring-blue-400/15">
             <div className="grid gap-6 sm:gap-8 lg:gap-10 xl:gap-12 sm:grid-cols-[350px_1fr] lg:grid-cols-[450px_1fr] xl:grid-cols-[550px_1fr] sm:items-start">
@@ -613,7 +586,7 @@ const TestOnePage = () => {
             </div>
           </div>
         </div>
-      ) : null}
+      ) : null} */}
 
       {/* หัวข้อหลัก */}
       <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-[5vw]">

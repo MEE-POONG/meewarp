@@ -39,7 +39,7 @@ const MOCK_SETTINGS: AppSettings = {
   brandName: 'มีวาร์ป',
   tagline: 'แสดงตัวตนของคุณบนจอใหญ่',
   backgroundImage:
-    'https://images.unsplash.com/photo-1579952363873-27d3bfad9c0d?q=80&w=1935&auto=format&fit=crop',
+    '/images/bg.png',
 }
 
 const MOCK_SUPPORTERS_POOL: Supporter[] = [
@@ -478,89 +478,55 @@ const TestOnePage = () => {
   }
 
   return (
-    <div
-      className={`relative flex min-h-screen w-screen overflow-hidden text-slate-100
-    ${backgroundImage
-          ? `bg-[url('${backgroundImage}')] bg-cover bg-center bg-no-repeat bg-fixed`
-          : 'bg-blue-950'
-        }`}
-      style={!backgroundImage ? { backgroundColor: gradientPrimary || '#1e3a8a' } : {}}
-    >
-      {/* พื้นหลังเบลอ */}
-      {backgroundImage && (
-        <div
-          className={`
-          pointer-events-none fixed inset-0 -z-20
-          bg-cover bg-center bg-no-repeat
-          blur-[15px] scale-[1.05] opacity-30
-          [background-clip:padding-box] [background-origin:padding-box]
-        `}
-          style={{ backgroundImage: `url(${backgroundImage})` }}
-        />
-      )}
-      {/* เลเยอร์การไล่สี */}
-      {backgroundImage && (
-        <div
-          className={`
-            pointer-events-none fixed inset-0 -z-20
-            bg-radial-gradient-ellipse from-transparent via-transparent to-[${toRgba(gradientPrimary, 0.85)}]
-            opacity-90
-          `}
-        />
-      )}
+    <>
+      <div className="relative flex min-h-screen w-screen overflow-hidden bg-black text-slate-100 ">
+        {/* พื้นหลังเบลอ */}
+        {backgroundImage && (
+          <div
+            className="absolute inset-0 z-0 blur-[15px] scale-[1.05] opacity-30 pointer-events-none"
+            style={{
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              transform: 'scale(1.05)',
+              opacity: 0.30,
+            }}
+          />
+        )}
+        {currentWarp ? (
+          <div className="absolute inset-0 z-20 aspect-square mx-auto flex h-screen items-center justify-center p-4">
+            <div
+              className={`
+    relative w-full h-full grid grid-cols-1 md:grid-cols-2 gap-6
+    bg-cover bg-center rounded-lg border-[2px] border-red-300
+    shadow-[0_0_2px_#f00,inset_0_0_2px_#f00,0_0_5px_#f00,0_0_15px_#f00,0_0_30px_#f00]
+  `}
+              style={{
+                backgroundImage: `url(${backgroundImage})`,
+              }}
+            >
+              {/* overlay สีดำโปร่งใส */}
+              {/* <div className="absolute inset-0 bg-black/60 rounded-lg z-0" /> */}
 
-      {/* พื้นหลังไล่สีพื้นฐาน */}
-      <div
-        className={`
-          pointer-events-none fixed inset-0 -z-30 opacity-75
-          bg-radial-gradient-ellipse from-[${toRgba(gradientPrimary, 0.6)}] via-transparent to-transparent
-        `}
-      />
-      <div
-        className={`
-          pointer-events-none fixed inset-0 -z-30 opacity-65 mix-blend-screen
-          bg-radial-gradient-ellipse from-[${toRgba(gradientSecondary, 0.4)}] via-transparent to-transparent
-        `}
-      />
-
-      {/* หน้าจอแสดงวาร์ป */}
-      {/* {currentWarp ? (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
-          <div className="pointer-events-auto w-full max-w-[800px] lg:max-w-[1200px] xl:max-w-[1400px] rounded-[32px] border-2 border-blue-400/25 bg-gradient-to-br from-white/20 to-blue-500/10 p-6 shadow-[0_40px_120px_rgba(30,64,175,0.7)] backdrop-blur-2xl sm:p-10 lg:p-16 xl:p-20 ring-4 ring-blue-400/15">
-            <div className="grid gap-6 sm:gap-8 lg:gap-10 xl:gap-12 sm:grid-cols-[350px_1fr] lg:grid-cols-[450px_1fr] xl:grid-cols-[550px_1fr] sm:items-start">
-              <div className="space-y-4">
-                <div className="relative aspect-square overflow-hidden rounded-[24px] border-4 border-blue-400/70 bg-blue-900/60 shadow-[0_35px_100px_rgba(30,64,175,0.8)] ring-8 ring-blue-400/40 sm:rounded-[32px] transform hover:scale-[1.02] transition-all duration-500">
-                  {warpImage ? (
-                    <img src={warpImage as string} alt={currentWarp.customerName} className="h-full w-full object-cover transition-transform duration-500 hover:scale-110" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-blue-900/70 text-slate-100">
-                      มีวาร์ป
-                    </div>
-                  )}
-                  <span className="absolute left-4 top-4 lg:left-6 lg:top-6 xl:left-8 xl:top-8 rounded-full bg-blue-500/95 backdrop-blur-sm px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-sm lg:text-base xl:text-lg font-bold text-white shadow-xl ring-2 ring-blue-300/60">
-                    {countdownLabel}
-                  </span>
-                  <div className="absolute inset-0 rounded-[24px] bg-gradient-to-t from-blue-900/35 via-transparent to-blue-500/15 pointer-events-none sm:rounded-[32px]"></div>
-                  <div className="absolute inset-0 rounded-[24px] ring-2 ring-blue-400/25 pointer-events-none sm:rounded-[32px]"></div>
-                </div>
-                {currentWarp.quote ? (
-                  <div className="rounded-xl border border-blue-400/25 bg-gradient-to-r from-blue-500/10 to-blue-600/10 p-4 lg:p-5 xl:p-6 backdrop-blur-sm">
-                    <p className="text-sm lg:text-base xl:text-lg font-medium text-blue-100 italic text-center leading-relaxed line-clamp-3">
-                      "{currentWarp.quote}"
-                    </p>
-                  </div>
-                ) : null}
+              {/* ฝั่งซ้าย - รูป */}
+              <div className="flex items-center justify-center p-4">
+                <img
+                  src={currentWarp.productImage || currentWarp.customerAvatar || "/placeholder.png"}
+                  alt={currentWarp.customerName}
+                  className="max-h-[80%] max-w-full rounded-lg object-cover shadow-[0_0_15px_rgba(255,0,0,0.8)]"
+                />
               </div>
-              <div className="space-y-4 lg:space-y-5 xl:space-y-6 text-left">
-                <div className="min-w-0">
-                  <p className="text-sm lg:text-base xl:text-lg uppercase tracking-[0.4em] text-blue-300 font-bold">คนดังประจำวัน</p>
-                  <h2
-                    className="mt-3 text-[clamp(2rem,8vw,7rem)] font-black text-white drop-shadow-lg truncate max-w-full"
-                    title={currentWarp.selfDisplayName || currentWarp.customerName}
-                  >
-                    {sanitizeName(currentWarp.selfDisplayName || currentWarp.customerName)}
-                  </h2>
-                </div>
+
+              {/* ฝั่งขวา - เนื้อหา */}
+              <div className="flex flex-col justify-center p-6 text-left space-y-4">
+                <h2 className="text-4xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,0,0,0.9)]">
+                  {currentWarp.selfDisplayName || currentWarp.customerName}
+                </h2>
+                {currentWarp.quote && (
+                  <p className="text-lg text-red-100 italic">
+                    "{currentWarp.quote}"
+                  </p>
+                )}
                 {currentWarp.socialLink ? (
                   <div className="flex flex-col items-center gap-2 lg:gap-3 xl:gap-4 rounded-xl border border-blue-400/25 bg-gradient-to-br from-blue-500/10 to-blue-600/10 p-3 lg:p-4 xl:p-5 backdrop-blur-sm">
                     <div className="h-16 w-16 lg:h-20 lg:w-20 xl:h-24 xl:w-24 overflow-hidden rounded-lg border border-blue-400/40 bg-white/95 shadow-[0_8px_25px_rgba(59,130,246,0.3)]">
@@ -573,99 +539,99 @@ const TestOnePage = () => {
                     <p className="text-xs lg:text-sm font-medium text-blue-200 text-center">สแกนเพื่อติดตาม</p>
                   </div>
                 ) : null}
-                <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 rounded-2xl border-2 border-blue-400/25 bg-gradient-to-r from-blue-500/15 to-blue-600/10 p-5 lg:p-6 xl:p-8 backdrop-blur-sm">
-                  <div className="rounded-xl border border-blue-400/70 bg-blue-500/30 px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-xs lg:text-sm xl:text-base uppercase tracking-[0.3em] text-blue-100 font-bold shadow-lg ring-2 ring-blue-400/40">
-                    เวลาที่เหลือ
-                  </div>
-                  <span className="text-2xl lg:text-4xl xl:text-5xl font-bold text-blue-100 drop-shadow-lg">{countdownLabel}</span>
-                </div>
-                <p className="text-sm lg:text-base xl:text-lg font-medium text-slate-200 bg-white/10 rounded-xl px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-center">
-                  เวลาที่ซื้อทั้งหมด <span className="text-blue-300 font-bold">{totalDurationLabel}</span>
-                </p>
               </div>
             </div>
           </div>
-        </div>
-      ) : null} */}
+        ) : null}
 
-      {/* หัวข้อหลัก */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-[5vw]">
-        <div className="flex max-w-[60vw] lg:max-w-[70vw] xl:max-w-[80vw] flex-col items-center text-center">
-          <span className="mb-4 text-[clamp(16px,1.3vw,24px)] lg:text-2xl xl:text-3xl uppercase tracking-[0.5em] text-blue-300">
-            {tagline}
-          </span>
-          <h1 className="font-display text-[clamp(72px,10vw,160px)] lg:text-[180px] xl:text-[220px] font-black leading-none text-white drop-shadow-[0_0_35px_rgba(59,130,246,0.6)]">
-            {brandName}
-          </h1>
-        </div>
-      </div>
-
-      {/* คิวอาร์โค้ดสำหรับแจกวาร์ป */}
-      <div className="pointer-events-auto absolute left-[2vw] bottom-[2vh] z-10 max-w-[85vw] sm:left-[4vw] sm:bottom-[4vh] rounded-3xl p-[1.6vw] lg:p-[2vw] xl:p-[2.5vw] backdrop-blur">
-        <div className="flex items-center gap-4 lg:gap-6 xl:gap-8">
-          <div className="h-[12vw] w-[12vw] min-h-[100px] min-w-[100px] max-h-[180px] max-w-[160px] lg:max-w-[200px] xl:max-w-[240px] overflow-hidden rounded-2xl p-2 lg:p-4 xl:p-5 shadow-[0_35px_100px_rgba(30,64,175,0.6)] backdrop-blur">
-            {selfWarpUrl ? (
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(selfWarpUrl)}`}
-                alt="สแกนเพื่อแจกวาร์ป"
-                className="h-full w-full object-contain"
-              />
-            ) : null}
+        {/* โปรโมชั่น */}
+        <div className="pointer-events-auto absolute left-4 top-4 rounded-2xl border border-white/15 bg-white/10 p-2 lg:p-4 xl:p-6 shadow-[0_25px_60px_rgba(30,64,175,0.5)] backdrop-blur">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">โปรโมชั่น</h3>
           </div>
-          <div className="flex-1 max-w-[60vw]">
+          <div className="text-center items-center gap-4 lg:gap-6 xl:gap-8">
+            <div className="aspect-[1/1] mx-auto w-full p-2 bg-white rounded-lg mb-2">
+              {selfWarpUrl ? (
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(selfWarpUrl)}`}
+                  alt="สแกนเพื่อแจกวาร์ป"
+                  className="h-full w-full object-contain"
+                />
+              ) : null}
+            </div>
             <p className="text-[clamp(12px,1.1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">สแกนเพื่อแจกวาร์ป</p>
             <p className="mt-1 text-[clamp(10px,0.9vw,16px)] lg:text-lg xl:text-xl text-slate-300">เลือกเวลา ชำระเงิน ขึ้นจอได้ทันที</p>
           </div>
         </div>
+
+
+        {/* คิวอาร์โค้ดสำหรับแจกวาร์ป */}
+        <div className="pointer-events-auto absolute right-4 bottom-4 w-[25vw] min-w-[260px] max-w-[320px] lg:max-w-[400px] xl:max-w-[380px] rounded-2xl border border-white/15 bg-white/10 p-2 lg:p-4 xl:p-6 shadow-[0_25px_60px_rgba(30,64,175,0.5)] backdrop-blur">
+
+          <div className="text-center items-center gap-4 lg:gap-6 xl:gap-8">
+            <div className="aspect-[1/1] mx-auto w-full p-2 bg-white rounded-lg mb-2">
+              {selfWarpUrl ? (
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(selfWarpUrl)}`}
+                  alt="สแกนเพื่อแจกวาร์ป"
+                  className="h-full w-full object-contain"
+                />
+              ) : null}
+            </div>
+            <p className="text-[clamp(12px,1.1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">สแกนเพื่อแจกวาร์ป</p>
+            <p className="mt-1 text-[clamp(10px,0.9vw,16px)] lg:text-lg xl:text-xl text-slate-300">เลือกเวลา ชำระเงิน ขึ้นจอได้ทันที</p>
+          </div>
+        </div>
+
+        {/* อันดับผู้สนับสนุน */}
+        <div className="pointer-events-auto absolute right-4 top-4 w-[25vw] min-w-[260px] max-w-[320px] lg:max-w-[400px] xl:max-w-[380px] rounded-2xl border border-white/15 bg-white/10 p-2 lg:p-4 xl:p-6 shadow-[0_25px_60px_rgba(30,64,175,0.5)] backdrop-blur">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">ฮอลล์ออฟเฟม</h3>
+            <span className="rounded-full bg-white/15 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
+              {supporters.length > 0 ? 'สด' : 'รอ'}
+            </span>
+          </div>
+          <ul className="mt-4 lg:mt-6 xl:mt-8 space-y-3 lg:space-y-4 xl:space-y-5">
+            {supportersToDisplay.map((supporter, index) => {
+              const avatarUrl =
+                resolveMediaSource(supporter.customerAvatar) ||
+                `https://ui-avatars.com/api/?background=1e40af&color=fff&name=${encodeURIComponent(
+                  supporter.customerName,
+                )}`
+              const isPlaceholder = supporter.totalAmount <= 0
+              const amountLabel = isPlaceholder ? 'รอเริ่มต้น' : currencyFormatter.format(supporter.totalAmount)
+
+              return (
+                <li key={`${supporter.customerName}-${index}`} className="flex items-center gap-3 lg:gap-4 xl:gap-5">
+                  <div className="relative">
+                    <img
+                      src={avatarUrl as string}
+                      alt={supporter.customerName}
+                      className="h-[2.8vw] w-[2.8vw] min-h-[44px] min-w-[44px] max-h-[52px] max-w-[52px] lg:min-h-[56px] lg:min-w-[56px] lg:max-h-[64px] lg:max-w-[64px] xl:min-h-[68px] xl:min-w-[68px] xl:max-h-[76px] xl:max-w-[76px] rounded-full border border-white/25 object-cover"
+                    />
+                    <span className="absolute -left-2 -top-2 flex h-[1.8vw] w-[1.8vw] min-h-[28px] min-w-[28px] lg:min-h-[32px] lg:min-w-[32px] xl:min-h-[36px] xl:min-w-[36px] items-center justify-center rounded-full bg-blue-500 text-[clamp(10px,0.7vw,14px)] lg:text-base xl:text-lg font-semibold text-white">
+                      #{index + 1}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[clamp(12px,0.9vw,16px)] lg:text-lg xl:text-xl font-semibold text-white truncate">
+                      {sanitizeName(supporter.customerName)}
+                    </p>
+                    <p className="text-[clamp(10px,0.8vw,14px)] lg:text-base xl:text-lg text-slate-300">{amountLabel}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/15 bg-white/10 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200">
+            {supporters.length > 0
+              ? 'เพิ่มเวลาวาร์ปเพื่อรักษาอันดับบนจอใหญ่'
+              : 'ยังไม่มีใครขึ้นจอ มาเป็นคนแรกกันเถอะ!'}
+          </div>
+        </div>
       </div>
 
-      {/* อันดับผู้สนับสนุน */}
-      <div className="pointer-events-auto absolute right-[4vw] top-[6vh] w-[25vw] min-w-[260px] max-w-[320px] lg:max-w-[400px] xl:max-w-[480px] rounded-2xl border border-white/15 bg-white/10 p-4 lg:p-6 xl:p-8 shadow-[0_25px_60px_rgba(30,64,175,0.5)] backdrop-blur">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">ฮอลล์ออฟเฟม</h3>
-          <span className="rounded-full bg-white/15 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
-            {supporters.length > 0 ? 'สด' : 'รอ'}
-          </span>
-        </div>
-        <ul className="mt-4 lg:mt-6 xl:mt-8 space-y-3 lg:space-y-4 xl:space-y-5">
-          {supportersToDisplay.map((supporter, index) => {
-            const avatarUrl =
-              resolveMediaSource(supporter.customerAvatar) ||
-              `https://ui-avatars.com/api/?background=1e40af&color=fff&name=${encodeURIComponent(
-                supporter.customerName,
-              )}`
-            const isPlaceholder = supporter.totalAmount <= 0
-            const amountLabel = isPlaceholder ? 'รอเริ่มต้น' : currencyFormatter.format(supporter.totalAmount)
-
-            return (
-              <li key={`${supporter.customerName}-${index}`} className="flex items-center gap-3 lg:gap-4 xl:gap-5">
-                <div className="relative">
-                  <img
-                    src={avatarUrl as string}
-                    alt={supporter.customerName}
-                    className="h-[2.8vw] w-[2.8vw] min-h-[44px] min-w-[44px] max-h-[52px] max-w-[52px] lg:min-h-[56px] lg:min-w-[56px] lg:max-h-[64px] lg:max-w-[64px] xl:min-h-[68px] xl:min-w-[68px] xl:max-h-[76px] xl:max-w-[76px] rounded-full border border-white/25 object-cover"
-                  />
-                  <span className="absolute -left-2 -top-2 flex h-[1.8vw] w-[1.8vw] min-h-[28px] min-w-[28px] lg:min-h-[32px] lg:min-w-[32px] xl:min-h-[36px] xl:min-w-[36px] items-center justify-center rounded-full bg-blue-500 text-[clamp(10px,0.7vw,14px)] lg:text-base xl:text-lg font-semibold text-white">
-                    #{index + 1}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[clamp(12px,0.9vw,16px)] lg:text-lg xl:text-xl font-semibold text-white truncate">
-                    {sanitizeName(supporter.customerName)}
-                  </p>
-                  <p className="text-[clamp(10px,0.8vw,14px)] lg:text-base xl:text-lg text-slate-300">{amountLabel}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-        <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/15 bg-white/10 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200">
-          {supporters.length > 0
-            ? 'เพิ่มเวลาวาร์ปเพื่อรักษาอันดับบนจอใหญ่'
-            : 'ยังไม่มีใครขึ้นจอ มาเป็นคนแรกกันเถอะ!'}
-        </div>
-      </div>
-    </div>
+    </>
   )
 }
 
