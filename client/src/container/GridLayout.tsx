@@ -44,7 +44,7 @@ export function GridLayout({
 
   return (
     <div
-      className={`relative rounded-lg border ${devMode ? "border-black/10" : "border-white/0"} h-full ${className}`}
+      className={`relative rounded-lg p-4 border ${devMode ? "border-black/10" : "border-white/0"} h-full ${className}`}
       style={{
         isolation: "isolate",
         contain: "layout style paint",
@@ -66,7 +66,7 @@ export function GridLayout({
           {gridVisible && (
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-0 block"
+              className="pointer-events-none absolute inset-0 block z-[0]"
               style={{
                 ["--cw" as any]: `calc((100% - ( (var(--cols) - 1) * var(--gap) )) / var(--cols))`,
                 ["--ch" as any]: `calc((100% - ( (var(--rows) - 1) * var(--gap) )) / var(--rows))`,
@@ -112,12 +112,11 @@ export function GridLayout({
                     border: devMode ? "1px dashed rgba(59,130,246,0.35)" : "none",
                   }}
                 >
-                 {devMode ? `r${r},c${c}` : ``}
+                  {devMode ? `r${r},c${c}` : ``}
                 </div>
               );
             })}
-
-          {children}
+            {children}
         </div>
       </GridMetaCtx.Provider>
     </div>
@@ -152,7 +151,7 @@ export function Box({
   frameStyle,
   children,
 }: BoxProps) {
-  const { rows, cols, devMode, devLineColor } = useGridMeta();
+  const { rows, cols, devMode,  } = useGridMeta();
 
   const sr = clamp(startRow, 1, rows);
   const sc = clamp(startCol, 1, cols);

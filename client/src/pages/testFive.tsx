@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Box, GridLayout } from '../container/GridLayout'
+import PromoSlider from '../container/PromoSlider'
+import { ModalWarp } from '../container/ModalWarp'
 /**
  * ✅ โหมดจำลองข้อมูล
  * - ใช้ข้อมูลจำลองภาษาไทยแทน API จริง
@@ -478,22 +480,102 @@ const TestFivePage = () => {
   }
 
   return (
-    <div className="h-screen p-4">
-      <GridLayout rows={6} cols={8} gap={8} showIndex devMode={true} style={{ height: "100%" }}>
-        {/* startRow=2, rowSpan=15 -> จะถูกหักเหลือ 9 อัตโนมัติ */}
-        <Box startRow={1} startCol={1} rowSpan={15} colSpan={2}>
-          foodmenu
-        </Box>
-        {/* มุมขวาล่าง: ถ้าเกินจะถูกหักเหลือพอดี */}
-        <Box startRow={1} startCol={7} rowSpan={3} colSpan={3} className="flex items-center justify-center">
-          tail cell
-        </Box>
-        <Box startRow={4} startCol={7} rowSpan={3} colSpan={3} className="flex items-center justify-center">
-          QrCode
-        </Box>
-      </GridLayout>
+    <>
+      {backgroundImage && (
+        <div
+          className="absolute inset-0 z-0 blur-[15px] opacity-30 pointer-events-none no-repeat bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${backgroundImage})`,
+          }}
+        />
+      )}
+      <div className="relative h-screen bg-black">
+        <img src="/images/paper.png" alt="logo" className="h-[80%] object-contain absolute z-10 bottom-0 left-0 w-auto" />
+        <GridLayout gap={8} rows={6} cols={12} showIndex devMode={false} style={{ height: "100%" }}>
+          {/* startRow=2, rowSpan=15 -> จะถูกหักเหลือ 9 อัตโนมัติ */}
+          <Box startRow={1} startCol={4} rowSpan={6} colSpan={6}>
+            <PromoSlider
+              className='relative bg-red-500/10 rounded-lg shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur text-center h-full'
+              items={[
+                { src: "/images/pro1.jpg", alt: "โปรโมชั่น-1" },
+                { src: "/images/pro2.jpg", alt: "โปรโมชั่น-2" },
+                { src: "/images/pro3.jpg", alt: "โปรโมชั่น-3" },
+                { src: "/images/pro4.jpg", alt: "โปรโมชั่น-4" },
+              ]}
+            // vertical = true (ดีฟอลต์) → แนวตั้ง
+            />
+          </Box>
+          {/* มุมขวาล่าง: ถ้าเกินจะถูกหักเหลือพอดี */}
+          <Box startRow={1} startCol={10} rowSpan={3} colSpan={3} className="">
+            <div className='relative h-full bg-red-500/10 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur'>
+              {/* <div className='absolute inset-0 bg-black/50 blur-sm ' />*/}
+              <div className="flex items-center justify-between">
+                <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">ฮอลล์ออฟเฟม</h3>
+                <span className="rounded-full bg-white/15 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
+                  {supporters.length > 0 ? 'สด' : 'รอ'}
+                </span>
+              </div>
+              <ul className="mt-4 lg:mt-6 xl:mt-8 space-y-3 lg:space-y-4 xl:space-y-5">
+                {supportersToDisplay.map((supporter, index) => {
+                  const avatarUrl =
+                    resolveMediaSource(supporter.customerAvatar) ||
+                    `https://ui-avatars.com/api/?background=1e40af&color=fff&name=${encodeURIComponent(
+                      supporter.customerName,
+                    )}`
+                  const isPlaceholder = supporter.totalAmount <= 0
+                  const amountLabel = isPlaceholder ? 'รอเริ่มต้น' : currencyFormatter.format(supporter.totalAmount)
 
-    </div>
+                  return (
+                    <li key={`${supporter.customerName}-${index}`} className="flex items-center gap-3 lg:gap-4 xl:gap-5">
+                      <div className="relative">
+                        <img
+                          src={avatarUrl as string}
+                          alt={supporter.customerName}
+                          className="h-[2.8vw] w-[2.8vw] min-h-[44px] min-w-[44px] max-h-[52px] max-w-[52px] lg:min-h-[56px] lg:min-w-[56px] lg:max-h-[64px] lg:max-w-[64px] xl:min-h-[68px] xl:min-w-[68px] xl:max-h-[76px] xl:max-w-[76px] rounded-full border border-white/25 object-cover"
+                        />
+                        <span className="absolute -left-2 -top-2 flex h-[1.8vw] w-[1.8vw] min-h-[28px] min-w-[28px] lg:min-h-[32px] lg:min-w-[32px] xl:min-h-[36px] xl:min-w-[36px] items-center justify-center rounded-full bg-blue-500 text-[clamp(10px,0.7vw,14px)] lg:text-base xl:text-lg font-semibold text-white">
+                          #{index + 1}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[clamp(12px,0.9vw,16px)] lg:text-lg xl:text-xl font-semibold text-white truncate">
+                          {sanitizeName(supporter.customerName)}
+                        </p>
+                        <p className="text-[clamp(10px,0.8vw,14px)] lg:text-base xl:text-lg text-slate-300">{amountLabel}</p>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+              <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/15 bg-red-500/10 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00]">
+                {supporters.length > 0
+                  ? 'เพิ่มเวลาวาร์ปเพื่อรักษาอันดับบนจอใหญ่'
+                  : 'ยังไม่มีใครขึ้นจอ มาเป็นคนแรกกันเถอะ!'}
+              </div>
+            </div>
+          </Box>
+          <Box startRow={4} startCol={10} rowSpan={3} colSpan={3} className="items-center justify-center">
+            <div className='relative h-full bg-red-500/10 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur text-center'>
+              {selfWarpUrl ? (
+                <div className='h-80 w-80 m-auto p-4 bg-white rounded-sm mb-4'>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(selfWarpUrl)}`}
+                    alt="สแกนเพื่อแจกวาร์ป"
+                    className="object-contain"
+                  />
+                </div>
+              ) : null}
+              <div className="flex-1 max-w-[60vw]">
+                <p className="text-[clamp(12px,1.1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">สแกนเพื่อแจกวาร์ป</p>
+                <p className="mt-1 text-[clamp(10px,0.9vw,16px)] lg:text-lg xl:text-xl text-slate-300">เลือกเวลา ชำระเงิน ขึ้นจอได้ทันที</p>
+              </div>
+            </div>
+          </Box>
+        </GridLayout>
+        <ModalWarp />
+      </div>
+    </>
+
   )
 }
 
