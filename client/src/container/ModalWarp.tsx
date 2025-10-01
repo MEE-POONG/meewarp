@@ -1,5 +1,5 @@
 // ModalWarp.tsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // ---------- ประเภทข้อมูล (คัดลอกมาเพื่อให้คอมโพเนนต์สมบูรณ์) ----------
 export type DisplayWarp = {
@@ -51,7 +51,7 @@ const MOCK_WARPS_QUEUE: DisplayWarp[] = [
 ];
 
 // ---------- คอมโพเนนต์ ModalWarp ----------
-export function ModalWarp({ className }: { className?: string }) {
+export function ModalWarp({ className, textColor }: { className?: string, textColor?: string }) {
   const [currentWarp, setCurrentWarp] = useState<DisplayWarp | null>(null);
   const [countdown, setCountdown] = useState<number>(0);
   const isFetchingWarpRef = useRef(false);
@@ -200,10 +200,10 @@ export function ModalWarp({ className }: { className?: string }) {
               <img
                 src={warpImage as string}
                 alt={currentWarp.customerName}
-                className="w-[60vh] h-[80vh] object-cover rounded-xl aspect-[5/3] m-auto"
+                className={`w-[60vh] h-[80vh] object-cover rounded-xl aspect-[5/3] m-auto`}
               />
             ) : (
-              <div className="grid place-items-center bg-blue-900/70 text-slate-100">
+              <div className={`grid place-items-center bg-${textColor}-900/70 text-slate-100`}>
                 มีวาร์ป
               </div>
             )}
@@ -216,14 +216,14 @@ export function ModalWarp({ className }: { className?: string }) {
           <div className={`${className}`}>
             <div className="flex flex-col justify-center items-center h-full">
               <h2
-                className="text-[5rem] font-black text-white drop-shadow-lg text-ellipsis"
+                className={`text-[4rem] font-black text-white drop-shadow-lg text-ellipsis`}
                 title={currentWarp.selfDisplayName || currentWarp.customerName}
               >
                 {sanitizeName(currentWarp.selfDisplayName || currentWarp.customerName)}
               </h2>
 
               {currentWarp.quote && (
-                <p className="mt-8 text-[3rem] font-medium text-blue-100 italic leading-relaxed">
+                <p className={`mt-8 text-[2rem] font-medium text-white italic leading-relaxed`}>
                   {/* “{currentWarp.quote}” */}
                   {/* เปลี่ยนเป็น icon instagram */}
                   {/* <FaInstagram />  */}IG : devilzeros
@@ -236,7 +236,7 @@ export function ModalWarp({ className }: { className?: string }) {
           <div className="grid grid-cols-2 gap-6 max-h-max">
             {/* ซ้าย: QR */}
             <div className={`${className}`}>
-              <div className="aspect-square p-4 overflow-hidden rounded-lg border border-blue-400/40 bg-white/95 shadow-[0_8px_25px_rgba(59,130,246,0.3)]">
+              <div className={`aspect-square p-4 overflow-hidden rounded-lg border border-${textColor}-400/40 bg-white/95 shadow-[0_8px_25px_rgba(59,130,246,0.3)]`}>
                 {currentWarp.socialLink ? (
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(
@@ -246,22 +246,22 @@ export function ModalWarp({ className }: { className?: string }) {
                     className="aspect-square h-full w-full object-contain"
                   />
                 ) : (
-                  <div className="h-full w-full grid place-items-center text-blue-300 text-sm">QR</div>
+                  <div className={`h-full w-full grid place-items-center text-${textColor}-100 text-sm`}>QR</div>
                 )}
               </div>
-              <div className="text-[1rem] mt-2 font-medium text-red-500 text-center text-bold">
+              <div className={`text-[1.5rem] mt-2 font-bold text-white text-center text-bold`}>
                 สแกนเพื่อติดตาม
               </div>
             </div>
 
             {/* ขวา: เวลาถอยหลัง + เวลารวม (ในกล่องเดียวตามภาพ) */}
             <div className={`flex flex-col justify-center items-center ${className}`}>
-              <div className="text-4xl font-bold text-red-100 drop-shadow-lg text-center">
+              <div className={`text-4xl font-bold text-white drop-shadow-lg text-center`}>
                 เวลาที่เหลือ <br />
-                <span className="text-red-500 font-bold">{countdownLabel}</span>
+                <span className={`text-${textColor}-500 font-bold`}>{countdownLabel}</span>
               </div>
-              <div className="mt-4 text-sm text-slate-200 text-center">
-                เวลาที่ซื้อทั้งหมด <span className="text-red-500 font-bold">{totalDurationLabel}</span>
+              <div className={`mt-4 text-sm text-slate-200 text-center`}>
+                เวลาที่ซื้อทั้งหมด <span className={`text-${textColor}-500 font-bold`}>{totalDurationLabel}</span>
               </div>
             </div>
           </div>

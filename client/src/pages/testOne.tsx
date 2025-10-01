@@ -140,9 +140,24 @@ const fallbackSupporters: Supporter[] = [
   { customerName: 'อันดับสองยังว่าง', totalAmount: 0, customerAvatar: null },
   { customerName: 'อันดับสามยังว่าง', totalAmount: 0, customerAvatar: null },
 ]
-const temp = 'backdrop-blur bg-red-500/10 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur text-center'
+// ---------- THEME ----------
+type ThemeKey = 'blue' | 'red' | 'emerald' | 'violet' | 'amber' | 'rose' | 'cyan'
+
+const THEME_CLASS_MAP: Record<ThemeKey, string> = {
+  blue: 'backdrop-blur bg-blue-900/30  rounded-lg p-4 shadow-[0_0_2px_#3b82f6,inset_0_0_1px_#3b82f6,0_0_3px_#3b82f6,0_0_5px_#3b82f6,0_0_10px_#3b82f6] text-center',
+  red: 'backdrop-blur bg-red-900/30   rounded-lg p-4 shadow-[0_0_2px_#ef4444,inset_0_0_1px_#ef4444,0_0_3px_#ef4444,0_0_5px_#ef4444,0_0_10px_#ef4444] text-center',
+  emerald: 'backdrop-blur bg-emerald-900/30 rounded-lg p-4 shadow-[0_0_2px_#10b981,inset_0_0_1px_#10b981,0_0_3px_#10b981,0_0_5px_#10b981,0_0_10px_#10b981] text-center',
+  violet: 'backdrop-blur bg-violet-900/30  rounded-lg p-4 shadow-[0_0_2px_#8b5cf6,inset_0_0_1px_#8b5cf6,0_0_3px_#8b5cf6,0_0_5px_#8b5cf6,0_0_10px_#8b5cf6] text-center',
+  amber: 'backdrop-blur bg-amber-900/20 rounded-lg p-4 shadow-[0_0_2px_#f59e0b,inset_0_0_1px_#f59e0b,0_0_3px_#f59e0b,0_0_5px_#f59e0b,0_0_10px_#f59e0b] text-center',
+  rose: 'backdrop-blur bg-rose-900/20 rounded-lg p-4 shadow-[0_0_2px_#f43f5e,inset_0_0_1px_#f43f5e,0_0_3px_#f43f5e,0_0_5px_#f43f5e,0_0_10px_#f43f5e] text-center',
+  cyan: 'backdrop-blur bg-cyan-900/20 rounded-lg p-4 shadow-[0_0_2px_#06b6d4,inset_0_0_1px_#06b6d4,0_0_3px_#06b6d4,0_0_5px_#06b6d4,0_0_10px_#06b6d4] text-center',
+}
+
+
 // ---------- คอมโพเนนต์หลัก ----------
 const TestOnePage = () => {
+  const [theme, setTheme] = useState<ThemeKey>('blue')
+  const temp = THEME_CLASS_MAP[theme]
   const [supporters, setSupporters] = useState<Supporter[]>([])
   const [selfWarpUrl, setSelfWarpUrl] = useState<string>('')
   const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -361,6 +376,18 @@ const TestOnePage = () => {
 
   return (
     <>
+      <div className="absolute z-50 left-4 top-4 flex gap-2">
+        {(['blue', 'red', 'emerald', 'violet', 'amber', 'rose', 'cyan'] as ThemeKey[]).map(t => (
+          <button
+            key={t}
+            onClick={() => setTheme(t)}
+            className={`text-white px-2 py-1 rounded border border-white/20 text-xs uppercase ${t === theme ? `bg-${theme}-500` : 'bg-black'}`}
+            title={t}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
       {backgroundImage && (
         <div
           className="absolute inset-0 z-0 blur-[15px] opacity-30 pointer-events-none no-repeat bg-cover bg-center"
@@ -374,7 +401,7 @@ const TestOnePage = () => {
         <GridLayout gap={8} rows={6} cols={12} showIndex devMode={false} style={{ height: "100%" }}>
           <Box startRow={1} startCol={4} rowSpan={6} colSpan={6}>
             <PromoSlider
-              className='relative bg-red-500/10 rounded-lg shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur text-center h-full'
+              className={`relative rounded-lg text-center h-full ${temp}`}
               items={[
                 { src: "/images/pro1.jpg", alt: "โปรโมชั่น-1" },
                 { src: "/images/pro2.jpg", alt: "โปรโมชั่น-2" },
@@ -384,13 +411,16 @@ const TestOnePage = () => {
             />
           </Box>
           <Box startRow={1} startCol={10} rowSpan={3} colSpan={3} className="">
-            <div className='relative h-full bg-red-500/10 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur'>
+            <div className={`relative h-full rounded-lg p-4 text-center ${temp}`}>
+              {/* ส่วนบน: ชื่อฮอลล์ + สถานะฮอลล์ */}
               <div className="flex items-center justify-between">
                 <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">ฮอลล์ออฟเฟม</h3>
                 <span className="rounded-full bg-white/15 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
                   {supporters.length > 0 ? 'สด' : 'รอ'}
                 </span>
               </div>
+
+              {/* ส่วนล่าง: รายชื่อผู้สนับสนุน */}
               <ul className="mt-4 lg:mt-6 xl:mt-8 space-y-3 lg:space-y-4 xl:space-y-5">
                 {supportersToDisplay.map((supporter, index) => {
                   const avatarUrl =
@@ -423,7 +453,7 @@ const TestOnePage = () => {
                   )
                 })}
               </ul>
-              <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/15 bg-red-500/10 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00]">
+              <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/15 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200 temp ${temp}">
                 {supporters.length > 0
                   ? 'เพิ่มเวลาวาร์ปเพื่อรักษาอันดับบนจอใหญ่'
                   : 'ยังไม่มีใครขึ้นจอ มาเป็นคนแรกกันเถอะ!'}
@@ -448,7 +478,7 @@ const TestOnePage = () => {
             </div>
           </Box>
           <Box startRow={1} startCol={3} rowSpan={6} colSpan={8}>
-            <ModalWarp className="bg-black/50 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur-md" />
+            <ModalWarp className={`p-4 ${temp}`} textColor={theme} />
           </Box>
         </GridLayout>
       </div>

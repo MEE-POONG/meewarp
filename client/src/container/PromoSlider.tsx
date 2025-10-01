@@ -1,7 +1,7 @@
 // components/PromoSlider.tsx
 'use client';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, EffectFade } from 'swiper/modules';
+import { Autoplay, EffectFade } from 'swiper/modules';
 
 type Item = { src: string; alt?: string };
 
@@ -9,7 +9,7 @@ export default function PromoSlider({
   items,
   vertical = false,
   effect = 'fade',
-  className='relative overflow-hidden',
+  className = 'relative overflow-hidden',
 }: {
   items: Item[];
   vertical?: boolean;
