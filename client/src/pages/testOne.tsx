@@ -524,7 +524,7 @@ const TestOnePage = () => {
       />
 
       {/* หน้าจอแสดงวาร์ป */}
-      {/* {currentWarp ? (
+      {currentWarp ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
           <div className="pointer-events-auto w-full max-w-[800px] lg:max-w-[1200px] xl:max-w-[1400px] rounded-[32px] border-2 border-blue-400/25 bg-gradient-to-br from-white/20 to-blue-500/10 p-6 shadow-[0_40px_120px_rgba(30,64,175,0.7)] backdrop-blur-2xl sm:p-10 lg:p-16 xl:p-20 ring-4 ring-blue-400/15">
             <div className="grid gap-6 sm:gap-8 lg:gap-10 xl:gap-12 sm:grid-cols-[350px_1fr] lg:grid-cols-[450px_1fr] xl:grid-cols-[550px_1fr] sm:items-start">
@@ -586,7 +586,7 @@ const TestOnePage = () => {
             </div>
           </div>
         </div>
-      ) : null} */}
+      ) : null}
 
       {/* หัวข้อหลัก */}
       <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-[5vw]">

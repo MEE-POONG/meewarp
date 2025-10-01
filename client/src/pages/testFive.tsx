@@ -490,9 +490,8 @@ const TestFivePage = () => {
         />
       )}
       <div className="relative h-screen bg-black">
-        <img src="/images/paper.png" alt="logo" className="h-[80%] object-contain absolute z-10 bottom-0 left-0 w-auto" />
+        <img src="/images/paper.png" alt="logo" className="h-[80%] object-contain absolute z-5 bottom-0 left-0 w-auto" />
         <GridLayout gap={8} rows={6} cols={12} showIndex devMode={false} style={{ height: "100%" }}>
-          {/* startRow=2, rowSpan=15 -> จะถูกหักเหลือ 9 อัตโนมัติ */}
           <Box startRow={1} startCol={4} rowSpan={6} colSpan={6}>
             <PromoSlider
               className='relative bg-red-500/10 rounded-lg shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur text-center h-full'
@@ -502,13 +501,10 @@ const TestFivePage = () => {
                 { src: "/images/pro3.jpg", alt: "โปรโมชั่น-3" },
                 { src: "/images/pro4.jpg", alt: "โปรโมชั่น-4" },
               ]}
-            // vertical = true (ดีฟอลต์) → แนวตั้ง
             />
           </Box>
-          {/* มุมขวาล่าง: ถ้าเกินจะถูกหักเหลือพอดี */}
           <Box startRow={1} startCol={10} rowSpan={3} colSpan={3} className="">
             <div className='relative h-full bg-red-500/10 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur'>
-              {/* <div className='absolute inset-0 bg-black/50 blur-sm ' />*/}
               <div className="flex items-center justify-between">
                 <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">ฮอลล์ออฟเฟม</h3>
                 <span className="rounded-full bg-white/15 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
@@ -571,8 +567,10 @@ const TestFivePage = () => {
               </div>
             </div>
           </Box>
+          <Box startRow={1} startCol={3} rowSpan={6} colSpan={8}>
+            <ModalWarp className="bg-black/50 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur-md" />
+          </Box>
         </GridLayout>
-        <ModalWarp />
       </div>
     </>
 

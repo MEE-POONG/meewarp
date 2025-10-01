@@ -24,14 +24,14 @@ export default function PromoSlider({
       autoplay={{ delay: 20000, disableOnInteraction: false, pauseOnMouseEnter: true }}
       speed={600}
       loop
-      className={`${vertical ? 'h-full' : 'w-full'} ${className}`}
+      className={`${vertical ? 'h-full' : 'w-full'} ${className} bg-black/50`}
     >
       {items.map((it, i) => (
         <SwiperSlide key={i} className="">
           <img
             src={it.src}
             alt={it.alt ?? `promo-${i}`}
-            className="h-full w-full object-cover rounded-lg"
+            className="h-full w-full object-contain rounded-lg"
             loading="lazy"
             decoding="async"
           />
