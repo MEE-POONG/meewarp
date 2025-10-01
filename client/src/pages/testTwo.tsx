@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-
+import { Box, GridLayout } from '../container/GridLayout'
+import PromoSlider from '../container/PromoSlider'
+import { ModalWarp } from '../container/ModalWarp'
 /**
  * ✅ โหมดจำลองข้อมูล
  * - ใช้ข้อมูลจำลองภาษาไทยแทน API จริง
@@ -39,7 +41,7 @@ const MOCK_SETTINGS: AppSettings = {
   brandName: 'มีวาร์ป',
   tagline: 'แสดงตัวตนของคุณบนจอใหญ่',
   backgroundImage:
-    '/images/image.png',
+    '/images/bg.png',
 }
 
 const MOCK_SUPPORTERS_POOL: Supporter[] = [
@@ -138,15 +140,14 @@ const fallbackSupporters: Supporter[] = [
   { customerName: 'อันดับสองยังว่าง', totalAmount: 0, customerAvatar: null },
   { customerName: 'อันดับสามยังว่าง', totalAmount: 0, customerAvatar: null },
 ]
-
+const colorBorder= 'blue';
+const temp = `backdrop-blur bg-${colorBorder}-500/10 rounded-lg p-4 shadow-[0_0_2px_#${colorBorder},inset_0_0_1px_#${colorBorder},0_0_3px_#${colorBorder},0_0_5px_#${colorBorder},0_0_10px_#${colorBorder}] backdrop-blur text-center`
 // ---------- คอมโพเนนต์หลัก ----------
 const TestTwoPage = () => {
   const [supporters, setSupporters] = useState<Supporter[]>([])
   const [selfWarpUrl, setSelfWarpUrl] = useState<string>('')
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [currentWarp, setCurrentWarp] = useState<DisplayWarp | null>(null)
-  const [countdown, setCountdown] = useState<number>(0)
-  const [imageColors, setImageColors] = useState<{ primary: string; secondary: string } | null>(null)
   const isFetchingWarpRef = useRef(false)
   const currentWarpRef = useRef<DisplayWarp | null>(null)
   const fetchNextWarpRef = useRef<() => void>(() => { })
@@ -215,75 +216,6 @@ const TestTwoPage = () => {
     return raw
   }, [])
 
-  const extractImageColors = useCallback((imageUrl: string) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
-
-        const size = 50
-        canvas.width = size
-        canvas.height = size
-
-        ctx.drawImage(img, 0, 0, size, size)
-        const imageData = ctx.getImageData(0, 0, size, size)
-        const data = imageData.data
-
-        const colors: { r: number; g: number; b: number; count: number }[] = []
-
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i]
-          const g = data[i + 1]
-          const b = data[i + 2]
-          const brightness = (r + g + b) / 3
-          if (brightness < 30 || brightness > 225) continue
-          const existingColor = colors.find(
-            (c) => Math.abs(c.r - r) < 20 && Math.abs(c.g - g) < 20 && Math.abs(c.b - b) < 20,
-          )
-          if (existingColor) {
-            existingColor.r = (existingColor.r * existingColor.count + r) / (existingColor.count + 1)
-            existingColor.g = (existingColor.g * existingColor.count + g) / (existingColor.count + 1)
-            existingColor.b = (existingColor.b * existingColor.count + b) / (existingColor.count + 1)
-            existingColor.count++
-          } else {
-            colors.push({ r, g, b, count: 1 })
-          }
-        }
-
-        colors.sort((a, b) => b.count - a.count)
-
-        if (colors.length > 0) {
-          const primary = colors[0]
-          const secondary = colors[1] || colors[0]
-          const primaryColor = `rgb(${Math.round(primary.r)}, ${Math.round(primary.g)}, ${Math.round(primary.b)})`
-          const secondaryColor = `rgb(${Math.round(secondary.r)}, ${Math.round(secondary.g)}, ${Math.round(secondary.b)})`
-          setImageColors({ primary: primaryColor, secondary: secondaryColor })
-        }
-      } catch (error) {
-        console.error('ข้อผิดพลาดในการดึงสี:', error)
-      }
-    }
-
-    img.onerror = () => {
-      console.error('ไม่สามารถโหลดรูปภาพสำหรับดึงสีได้')
-    }
-
-    img.src = imageUrl
-  }, [])
-
-  const formatSeconds = useCallback((value: number) => {
-    const safe = Math.max(0, Math.floor(value))
-    const minutes = Math.floor(safe / 60)
-      .toString()
-      .padStart(2, '0')
-    const seconds = (safe % 60).toString().padStart(2, '0')
-    return `${minutes}:${seconds}`
-  }, [])
-
   const sanitizeName = useCallback((name: string) => {
     return name.trim()
   }, [])
@@ -312,7 +244,6 @@ const TestTwoPage = () => {
   const completeCurrentWarp = useCallback(async (transactionId: string) => {
     if (!transactionId) {
       setCurrentWarp(null)
-      setCountdown(0)
       fetchNextWarpRef.current?.()
       return
     }
@@ -323,7 +254,6 @@ const TestTwoPage = () => {
       console.error('ไม่สามารถทำเครื่องหมายวาร์ปเสร็จสิ้นได้', error)
     } finally {
       setCurrentWarp(null)
-      setCountdown(0)
       setTimeout(() => {
         fetchNextWarpRef.current?.()
       }, 500)
@@ -336,18 +266,12 @@ const TestTwoPage = () => {
 
   useEffect(() => {
     if (!currentWarp) return
-    setCountdown(currentWarp.displaySeconds)
-
-    const interval = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0))
-    }, 1000)
 
     const timeout = setTimeout(() => {
       completeCurrentWarp(currentWarp.id)
     }, currentWarp.displaySeconds * 1000)
 
     return () => {
-      clearInterval(interval)
       clearTimeout(timeout)
     }
   }, [currentWarp, completeCurrentWarp])
@@ -423,29 +347,8 @@ const TestTwoPage = () => {
   const hasLiveData = supporters.length > 0
   const supportersToDisplay = hasLiveData ? supporters : fallbackSupporters
 
-  const warpImage = useMemo(() => {
-    if (!currentWarp) return null
-    return (
-      resolveMediaSource(currentWarp.productImage) ||
-      resolveMediaSource(currentWarp.customerAvatar) ||
-      `https://ui-avatars.com/api/?background=1e40af&color=fff&name=${encodeURIComponent(
-        currentWarp.customerName,
-      )}`
-    )
-  }, [currentWarp, resolveMediaSource])
-
-  const countdownLabel = useMemo(() => formatSeconds(countdown), [countdown, formatSeconds])
-  const totalDurationLabel = useMemo(
-    () => (currentWarp ? formatSeconds(currentWarp.displaySeconds) : '00:00'),
-    [currentWarp, formatSeconds],
-  )
-
-  const brandName = settings?.brandName || ''
-  const tagline = settings?.tagline || ''
-
   const backgroundImage = useMemo(() => {
     if (!settings?.backgroundImage) {
-      setImageColors(null)
       return null
     }
     let imageUrl: string | null
@@ -454,120 +357,104 @@ const TestTwoPage = () => {
     } else {
       imageUrl = resolveMediaSource(settings.backgroundImage)
     }
-    if (imageUrl) extractImageColors(imageUrl)
     return imageUrl
-  }, [settings?.backgroundImage, resolveMediaSource, extractImageColors])
-
-  const defaultPrimary = '#1e40af'
-  const defaultSecondary = '#ec4899'
-  const gradientPrimary = imageColors?.primary || defaultPrimary
-  const gradientSecondary = imageColors?.secondary || defaultSecondary
-
-  const toRgba = (color: string, alpha: number) => {
-    if (color.startsWith('rgb(')) return color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`)
-    if (color.startsWith('#')) {
-      let hex = color.slice(1)
-      if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('')
-      const numeric = parseInt(hex, 16)
-      const r = (numeric >> 16) & 255
-      const g = (numeric >> 8) & 255
-      const b = numeric & 255
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`
-    }
-    return color
-  }
+  }, [settings?.backgroundImage, resolveMediaSource])
 
   return (
     <>
-      <div className="relative flex min-h-screen w-screen overflow-hidden bg-black text-slate-100">
-        {/* พื้นหลังเบลอ */}
-        {backgroundImage && (
-          <div
-            className="absolute inset-0 z-0"
-            style={{
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              filter: 'blur(5px)',
-              transform: 'scale(1.05)',
-              opacity: 0.25,
-            }}
-          />
-        )}
+      {backgroundImage && (
+        <div
+          className="absolute inset-0 z-0 blur-[15px] opacity-30 pointer-events-none no-repeat bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${backgroundImage})`,
+          }}
+        />
+      )}
+      <div className="relative h-screen bg-black">
+        <img src="/images/paper.png" alt="logo" className="h-[80%] object-contain absolute z-5 bottom-0 left-0 w-auto" />
+        <GridLayout gap={8} rows={6} cols={12} showIndex devMode={false} style={{ height: "100%" }}>
+          <Box startRow={1} startCol={4} rowSpan={6} colSpan={6}>
+            <PromoSlider
+              className='relative bg-red-500/10 rounded-lg shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur text-center h-full'
+              items={[
+                { src: "/images/pro1.jpg", alt: "โปรโมชั่น-1" },
+                { src: "/images/pro2.jpg", alt: "โปรโมชั่น-2" },
+                { src: "/images/pro3.jpg", alt: "โปรโมชั่น-3" },
+                { src: "/images/pro4.jpg", alt: "โปรโมชั่น-4" },
+              ]}
+            />
+          </Box>
+          <Box startRow={1} startCol={10} rowSpan={3} colSpan={3} className="">
+            <div className='relative h-full bg-red-500/10 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur'>
+              <div className="flex items-center justify-between">
+                <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">ฮอลล์ออฟเฟม</h3>
+                <span className="rounded-full bg-white/15 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
+                  {supporters.length > 0 ? 'สด' : 'รอ'}
+                </span>
+              </div>
+              <ul className="mt-4 lg:mt-6 xl:mt-8 space-y-3 lg:space-y-4 xl:space-y-5">
+                {supportersToDisplay.map((supporter, index) => {
+                  const avatarUrl =
+                    resolveMediaSource(supporter.customerAvatar) ||
+                    `https://ui-avatars.com/api/?background=1e40af&color=fff&name=${encodeURIComponent(
+                      supporter.customerName,
+                    )}`
+                  const isPlaceholder = supporter.totalAmount <= 0
+                  const amountLabel = isPlaceholder ? 'รอเริ่มต้น' : currencyFormatter.format(supporter.totalAmount)
 
-        <div className="absolute inset-0 z-10 aspect-square mx-auto flex h-screen items-center justify-center p-4 ">
-          <div
-            className={`
-            relative w-full h-full flex items-center justify-center 
-            bg-cover bg-center rounded-lg
-            border-[2px] border-red-300
-            ${backgroundImage ? `bg-[url(${backgroundImage})]` : 'bg-blue-500'}
-            shadow-[0_0_2px_#f00,inset_0_0_2px_#f00,0_0_5px_#f00,0_0_15px_#f00,0_0_15px_#f00]
-          `}
-          //   className={`relative bg-cover bg-center w-full h-full 
-          //  ${backgroundImage ? `bg-[url(${backgroundImage})]` : 'bg-blue-500'} border-red-200 shadow-[0_0_2px_#fff,inset_0_0_2px_#fff,0_0_5px_#08f,0_0_15px_#08f,0_0_30px_#08f]`}
-          >
-
-            {/* border ชั้นนอกสุด (แดงอีกชั้น) */}
-            {/* <div className="absolute inset-2 rounded-md border-[3px] border-red-500" /> */}
-
-            {/* เนื้อหา */}
-            <h1 className="relative z-10 text-6xl font-bold text-white drop-shadow-[0_0_25px_rgba(255,0,150,0.8)]">
-              Neon Border ✨
-            </h1>
-          </div>
-        </div>
-
-        {/* อันดับผู้สนับสนุน */}
-        <div className="pointer-events-auto absolute right-[4vw] top-4 w-[25vw] min-w-[260px] max-w-[320px] lg:max-w-[400px] xl:max-w-[380px] rounded-2xl border border-white/15 bg-white/10 p-4 lg:p-6 xl:p-8 shadow-[0_25px_60px_rgba(30,64,175,0.5)] backdrop-blur">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[clamp(14px,1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">ฮอลล์ออฟเฟม</h3>
-            <span className="rounded-full bg-white/15 px-2 py-0.5 lg:px-3 lg:py-1 xl:px-4 xl:py-1.5 text-[clamp(8px,0.6vw,12px)] lg:text-sm xl:text-base uppercase tracking-wide text-slate-100">
-              {supporters.length > 0 ? 'สด' : 'รอ'}
-            </span>
-          </div>
-          <ul className="mt-4 lg:mt-6 xl:mt-8 space-y-3 lg:space-y-4 xl:space-y-5">
-            {supportersToDisplay.map((supporter, index) => {
-              const avatarUrl =
-                resolveMediaSource(supporter.customerAvatar) ||
-                `https://ui-avatars.com/api/?background=1e40af&color=fff&name=${encodeURIComponent(
-                  supporter.customerName,
-                )}`
-              const isPlaceholder = supporter.totalAmount <= 0
-              const amountLabel = isPlaceholder ? 'รอเริ่มต้น' : currencyFormatter.format(supporter.totalAmount)
-
-              return (
-                <li key={`${supporter.customerName}-${index}`} className="flex items-center gap-3 lg:gap-4 xl:gap-5">
-                  <div className="relative">
-                    <img
-                      src={avatarUrl as string}
-                      alt={supporter.customerName}
-                      className="h-[2.8vw] w-[2.8vw] min-h-[44px] min-w-[44px] max-h-[52px] max-w-[52px] lg:min-h-[56px] lg:min-w-[56px] lg:max-h-[64px] lg:max-w-[64px] xl:min-h-[68px] xl:min-w-[68px] xl:max-h-[76px] xl:max-w-[76px] rounded-full border border-white/25 object-cover"
-                    />
-                    <span className="absolute -left-2 -top-2 flex h-[1.8vw] w-[1.8vw] min-h-[28px] min-w-[28px] lg:min-h-[32px] lg:min-w-[32px] xl:min-h-[36px] xl:min-w-[36px] items-center justify-center rounded-full bg-blue-500 text-[clamp(10px,0.7vw,14px)] lg:text-base xl:text-lg font-semibold text-white">
-                      #{index + 1}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[clamp(12px,0.9vw,16px)] lg:text-lg xl:text-xl font-semibold text-white truncate">
-                      {sanitizeName(supporter.customerName)}
-                    </p>
-                    <p className="text-[clamp(10px,0.8vw,14px)] lg:text-base xl:text-lg text-slate-300">{amountLabel}</p>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-          <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/15 bg-white/10 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200">
-            {supporters.length > 0
-              ? 'เพิ่มเวลาวาร์ปเพื่อรักษาอันดับบนจอใหญ่'
-              : 'ยังไม่มีใครขึ้นจอ มาเป็นคนแรกกันเถอะ!'}
-          </div>
-        </div>
+                  return (
+                    <li key={`${supporter.customerName}-${index}`} className="flex items-center gap-3 lg:gap-4 xl:gap-5">
+                      <div className="relative">
+                        <img
+                          src={avatarUrl as string}
+                          alt={supporter.customerName}
+                          className="h-[2.8vw] w-[2.8vw] min-h-[44px] min-w-[44px] max-h-[52px] max-w-[52px] lg:min-h-[56px] lg:min-w-[56px] lg:max-h-[64px] lg:max-w-[64px] xl:min-h-[68px] xl:min-w-[68px] xl:max-h-[76px] xl:max-w-[76px] rounded-full border border-white/25 object-cover"
+                        />
+                        <span className="absolute -left-2 -top-2 flex h-[1.8vw] w-[1.8vw] min-h-[28px] min-w-[28px] lg:min-h-[32px] lg:min-w-[32px] xl:min-h-[36px] xl:min-w-[36px] items-center justify-center rounded-full bg-blue-500 text-[clamp(10px,0.7vw,14px)] lg:text-base xl:text-lg font-semibold text-white">
+                          #{index + 1}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[clamp(12px,0.9vw,16px)] lg:text-lg xl:text-xl font-semibold text-white truncate">
+                          {sanitizeName(supporter.customerName)}
+                        </p>
+                        <p className="text-[clamp(10px,0.8vw,14px)] lg:text-base xl:text-lg text-slate-300">{amountLabel}</p>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+              <div className="mt-3 lg:mt-4 xl:mt-5 rounded-xl border border-white/15 bg-red-500/10 p-3 lg:p-4 xl:p-5 text-center text-[clamp(9px,0.7vw,12px)] lg:text-sm xl:text-base text-slate-200 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00]">
+                {supporters.length > 0
+                  ? 'เพิ่มเวลาวาร์ปเพื่อรักษาอันดับบนจอใหญ่'
+                  : 'ยังไม่มีใครขึ้นจอ มาเป็นคนแรกกันเถอะ!'}
+              </div>
+            </div>
+          </Box>
+          <Box startRow={4} startCol={10} rowSpan={3} colSpan={3} className="items-center justify-center">
+            <div className={`relative h-full rounded-lg p-4 text-center ${temp}`}>
+              {selfWarpUrl ? (
+                <div className='h-80 w-80 m-auto p-4 bg-white rounded-sm mb-4'>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(selfWarpUrl)}`}
+                    alt="สแกนเพื่อแจกวาร์ป"
+                    className="object-contain"
+                  />
+                </div>
+              ) : null}
+              <div className="flex-1 max-w-[60vw]">
+                <p className="text-[clamp(12px,1.1vw,20px)] lg:text-xl xl:text-2xl font-semibold text-white">สแกนเพื่อแจกวาร์ป</p>
+                <p className="mt-1 text-[clamp(10px,0.9vw,16px)] lg:text-lg xl:text-xl text-slate-300">เลือกเวลา ชำระเงิน ขึ้นจอได้ทันที</p>
+              </div>
+            </div>
+          </Box>
+          <Box startRow={1} startCol={3} rowSpan={6} colSpan={8}>
+            <ModalWarp className="bg-black/50 rounded-lg p-4 shadow-[0_0_2px_#f00,inset_0_0_1px_#f00,0_0_3px_#f00,0_0_5px_#f00,0_0_10px_#f00] backdrop-blur-md" />
+          </Box>
+        </GridLayout>
       </div>
-
     </>
+
   )
 }
 
