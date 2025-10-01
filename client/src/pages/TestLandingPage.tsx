@@ -1,5 +1,35 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { API_ENDPOINTS } from '../config';
+
+/** =========================================================
+ *  MOCK MODE & DUMMY DATA
+ *  - ปิดทุกการเรียก API และ EventSource
+ *  - จำลองข้อมูล settings / supporters / warp queue
+ * ========================================================= */
+const MOCK_MODE = true;
+
+// พื้นหลังแบบ data-uri (SVG gradient โทน indigo-violet ปลอด CORS)
+const MOCK_BG_SVG = encodeURIComponent(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'>
+  <defs>
+    <linearGradient id='g1' x1='0' x2='1' y1='0' y2='1'>
+      <stop offset='0%' stop-color='#4f46e5'/>
+      <stop offset='100%' stop-color='#8b5cf6'/>
+    </linearGradient>
+    <radialGradient id='g2' cx='20%' cy='25%' r='60%'>
+      <stop offset='0%' stop-color='rgba(99,102,241,0.6)'/>
+      <stop offset='100%' stop-color='rgba(99,102,241,0)'/>
+    </radialGradient>
+    <radialGradient id='g3' cx='80%' cy='80%' r='65%'>
+      <stop offset='0%' stop-color='rgba(56,189,248,0.4)'/>
+      <stop offset='100%' stop-color='rgba(56,189,248,0)'/>
+    </radialGradient>
+  </defs>
+  <rect width='1200' height='800' fill='url(#g1)'/>
+  <circle cx='0' cy='0' r='700' fill='url(#g2)'/>
+  <circle cx='1200' cy='800' r='700' fill='url(#g3)'/>
+</svg>
+`);
+const MOCK_BG_DATA_URL = `data:image/svg+xml;charset=utf-8,${MOCK_BG_SVG}`;
 
 type Supporter = {
   customerName: string;
@@ -16,24 +46,6 @@ type AppSettings = {
   logo?: string;
 };
 
-const fallbackSupporters: Supporter[] = [
-  {
-    customerName: 'รอการสนับสนุน',
-    totalAmount: 0,
-    customerAvatar: null,
-  },
-  {
-    customerName: 'ยังว่างอันดับ 2',
-    totalAmount: 0,
-    customerAvatar: null,
-  },
-  {
-    customerName: 'ยังว่างอันดับ 3',
-    totalAmount: 0,
-    customerAvatar: null,
-  },
-];
-
 type DisplayWarp = {
   id: string;
   customerName: string;
@@ -45,6 +57,60 @@ type DisplayWarp = {
   selfDisplayName?: string | null;
 };
 
+// ข้อมูล mock
+const mockSettings: AppSettings = {
+  brandName: 'MeeWarp',
+  tagline: 'Community Digital — Indigo/Violet',
+  primaryColor: '#4f46e5',
+  backgroundImage: MOCK_BG_DATA_URL,
+  logo: '',
+};
+
+const mockSupportersSeed: Supporter[] = [
+  { customerName: 'คุณอินดิโก้', totalAmount: 1590, customerAvatar: null },
+  { customerName: 'คุณไวโอเล็ต', totalAmount: 980, customerAvatar: null },
+  { customerName: 'คุณสกาย', totalAmount: 720, customerAvatar: null },
+];
+
+const fallbackSupporters: Supporter[] = [
+  { customerName: 'รอการสนับสนุน', totalAmount: 0, customerAvatar: null },
+  { customerName: 'ยังว่างอันดับ 2', totalAmount: 0, customerAvatar: null },
+  { customerName: 'ยังว่างอันดับ 3', totalAmount: 0, customerAvatar: null },
+];
+
+const mockWarpQueue: DisplayWarp[] = [
+  {
+    id: 'tx-001',
+    customerName: 'Indigo Lover',
+    selfDisplayName: 'INDIGO LOVER',
+    customerAvatar: null,
+    socialLink: 'https://example.com/@indigo',
+    quote: 'Make it glow in indigo.',
+    displaySeconds: 15,
+    productImage: null,
+  },
+  {
+    id: 'tx-002',
+    customerName: 'Violet Dreamer',
+    selfDisplayName: 'VIOLET DREAMER',
+    customerAvatar: null,
+    socialLink: 'https://example.com/@violet',
+    quote: 'Stay vivid. Stay kind.',
+    displaySeconds: 12,
+    productImage: null,
+  },
+  {
+    id: 'tx-003',
+    customerName: 'Sky Runner',
+    selfDisplayName: 'SKY RUNNER',
+    customerAvatar: null,
+    socialLink: 'https://example.com/@sky',
+    quote: 'Breathe, then sprint.',
+    displaySeconds: 10,
+    productImage: null,
+  },
+];
+
 const TestLandingPage = () => {
   const [supporters, setSupporters] = useState<Supporter[]>([]);
   const [selfWarpUrl, setSelfWarpUrl] = useState<string>('');
@@ -52,9 +118,11 @@ const TestLandingPage = () => {
   const [currentWarp, setCurrentWarp] = useState<DisplayWarp | null>(null);
   const [countdown, setCountdown] = useState<number>(0);
   const [imageColors, setImageColors] = useState<{ primary: string; secondary: string } | null>(null);
+
   const isFetchingWarpRef = useRef(false);
   const currentWarpRef = useRef<DisplayWarp | null>(null);
   const fetchNextWarpRef = useRef<() => void>(() => {});
+  const mockWarpIndexRef = useRef<number>(0); // index ปัจจุบันของคิว mock
 
   const currencyFormatter = useMemo(
     () =>
@@ -70,214 +138,143 @@ const TestLandingPage = () => {
     currentWarpRef.current = currentWarp;
   }, [currentWarp]);
 
+  /** ==============================
+   * SETTINGS (MOCK)
+   * ============================== */
   useEffect(() => {
     let isMounted = true;
 
-    const fetchSettings = async () => {
-      try {
-        const response = await fetch('/api/v1/public/settings');
-        if (!response.ok) {
-          throw new Error('Failed to load settings');
-        }
-        const data = await response.json();
-        if (isMounted) {
-          console.log('Settings loaded:', data);
-          setSettings(data);
-        }
-      } catch {
-        // silent fallback
+    const load = () => {
+      if (!isMounted) return;
+      if (MOCK_MODE) {
+        setSettings(mockSettings);
+        return;
       }
+      // (ถ้าอยากสลับกลับ API: วาง fetch จริงไว้ที่นี่)
     };
 
-    fetchSettings();
+    load();
 
-    // Set up periodic refresh every 10 seconds to catch settings updates
-    const interval = setInterval(() => {
-      if (isMounted) {
-        fetchSettings();
-      }
+    // จำลองการอัปเดต settings ทุก 10 วิ (เช่น สลับ tagline)
+    const iv = setInterval(() => {
+      if (!isMounted || !MOCK_MODE) return;
+      setSettings((prev) => {
+        if (!prev) return mockSettings;
+        const flip = prev.tagline?.includes('—') ? 'Community Digital' : 'Community Digital — Indigo/Violet';
+        return { ...prev, tagline: flip };
+      });
     }, 10000);
-
-    // Also refresh when the page becomes visible again (user switches back to tab)
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isMounted) {
-        fetchSettings();
-      }
-    };
-
-    // Listen for settings updates via localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'settingsUpdated' && isMounted) {
-        console.log('Settings update detected, refreshing...');
-        fetchSettings();
-        // Clear the flag
-        localStorage.removeItem('settingsUpdated');
-      }
-    };
-
-    // Also listen for custom events (for same-tab updates)
-    const handleSettingsUpdate = () => {
-      if (isMounted) {
-        console.log('Settings update event received, refreshing...');
-        fetchSettings();
-      }
-    };
-
-    window.addEventListener('settingsUpdated', handleSettingsUpdate);
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('storage', handleStorageChange);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('settingsUpdated', handleSettingsUpdate);
+      clearInterval(iv);
     };
   }, []);
 
   const resolveMediaSource = useCallback((raw?: string | null) => {
-    if (!raw) {
-      return null;
-    }
-
-    if (raw.startsWith('data:') || /^https?:\/\//i.test(raw)) {
-      return raw;
-    }
+    if (!raw) return null;
+    if (raw.startsWith('data:') || /^https?:\/\//i.test(raw)) return raw;
 
     const trimmed = raw.trim();
     if (/^[A-Za-z0-9+/=]+$/.test(trimmed)) {
       return `data:image/jpeg;base64,${trimmed}`;
     }
-
     return raw;
   }, []);
 
   const extractImageColors = useCallback((imageUrl: string) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    
+
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
-
-        // Resize image for faster processing
         const size = 50;
         canvas.width = size;
         canvas.height = size;
-        
-        ctx.drawImage(img, 0, 0, size, size);
-        const imageData = ctx.getImageData(0, 0, size, size);
-        const data = imageData.data;
 
-        // Sample colors from the image
+        ctx.drawImage(img, 0, 0, size, size);
+        const { data } = ctx.getImageData(0, 0, size, size);
+
         const colors: { r: number; g: number; b: number; count: number }[] = [];
-        
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
           const g = data[i + 1];
           const b = data[i + 2];
-          
-          // Skip very light or very dark pixels
           const brightness = (r + g + b) / 3;
           if (brightness < 30 || brightness > 225) continue;
-          
-          // Find existing color or add new one
-          const existingColor = colors.find(c => 
-            Math.abs(c.r - r) < 20 && 
-            Math.abs(c.g - g) < 20 && 
-            Math.abs(c.b - b) < 20
+
+          const existing = colors.find(
+            (c) => Math.abs(c.r - r) < 20 && Math.abs(c.g - g) < 20 && Math.abs(c.b - b) < 20
           );
-          
-          if (existingColor) {
-            existingColor.r = (existingColor.r * existingColor.count + r) / (existingColor.count + 1);
-            existingColor.g = (existingColor.g * existingColor.count + g) / (existingColor.count + 1);
-            existingColor.b = (existingColor.b * existingColor.count + b) / (existingColor.count + 1);
-            existingColor.count++;
+          if (existing) {
+            existing.r = (existing.r * existing.count + r) / (existing.count + 1);
+            existing.g = (existing.g * existing.count + g) / (existing.count + 1);
+            existing.b = (existing.b * existing.count + b) / (existing.count + 1);
+            existing.count++;
           } else {
             colors.push({ r, g, b, count: 1 });
           }
         }
 
-        // Sort by frequency and get top colors
         colors.sort((a, b) => b.count - a.count);
-        
         if (colors.length > 0) {
-          const primary = colors[0];
-          const secondary = colors[1] || colors[0];
-          
-          const primaryColor = `rgb(${Math.round(primary.r)}, ${Math.round(primary.g)}, ${Math.round(primary.b)})`;
-          const secondaryColor = `rgb(${Math.round(secondary.r)}, ${Math.round(secondary.g)}, ${Math.round(secondary.b)})`;
-          
-          setImageColors({ primary: primaryColor, secondary: secondaryColor });
+          const p = colors[0];
+          const s = colors[1] || colors[0];
+          setImageColors({
+            primary: `rgb(${Math.round(p.r)}, ${Math.round(p.g)}, ${Math.round(p.b)})`,
+            secondary: `rgb(${Math.round(s.r)}, ${Math.round(s.g)}, ${Math.round(s.b)})`,
+          });
         }
-      } catch (error) {
-        console.error('Error extracting colors:', error);
+      } catch (e) {
+        console.error('Error extracting colors:', e);
       }
     };
-    
-    img.onerror = () => {
-      console.error('Error loading image for color extraction');
-    };
-    
+
+    img.onerror = () => console.error('Error loading image for color extraction');
     img.src = imageUrl;
   }, []);
 
   const formatSeconds = useCallback((value: number) => {
     const safe = Math.max(0, Math.floor(value));
-    const minutes = Math.floor(safe / 60)
-      .toString()
-      .padStart(2, '0');
-    const seconds = (safe % 60)
-      .toString()
-      .padStart(2, '0');
+    const minutes = Math.floor(safe / 60).toString().padStart(2, '0');
+    const seconds = (safe % 60).toString().padStart(2, '0');
     return `${minutes}:${seconds}`;
   }, []);
 
   const sanitizeName = useCallback((name: string) => {
-    // Remove special characters, keep only Thai characters, English letters, numbers, and basic punctuation
     return name.replace(/[^\u0E00-\u0E7F\u0020-\u007E]/g, '').trim();
   }, []);
 
+  /** ==============================
+   * FETCH NEXT WARP (MOCK QUEUE)
+   * ============================== */
   const fetchNextWarp = useCallback(async () => {
-    if (isFetchingWarpRef.current || currentWarpRef.current) {
-      return;
-    }
-
+    if (isFetchingWarpRef.current || currentWarpRef.current) return;
     isFetchingWarpRef.current = true;
 
     try {
-      const response = await fetch(API_ENDPOINTS.displayNext, {
-        method: 'POST',
-      });
-
-      if (response.status === 204) {
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch next warp');
-      }
-
-      const data = await response.json();
-
-      if (data?.id) {
-        const displaySeconds = Math.max(1, Number(data.displaySeconds) || 30);
+      if (MOCK_MODE) {
+        const idx = mockWarpIndexRef.current % mockWarpQueue.length;
+        const data = mockWarpQueue[idx];
+        mockWarpIndexRef.current = (mockWarpIndexRef.current + 1) % mockWarpQueue.length;
 
         setCurrentWarp({
           id: data.id,
-          customerName: data.customerName || 'Mee Warp',
+          customerName: data.customerName,
           customerAvatar: data.customerAvatar || null,
           socialLink: data.socialLink || '',
           quote: data.quote || null,
-          displaySeconds,
-          productImage: data.metadata?.productImage || null,
+          displaySeconds: Math.max(1, Number(data.displaySeconds) || 15),
+          productImage: data.productImage || null,
           selfDisplayName: data.selfDisplayName || null,
         });
+        return;
       }
+
+      // (ถ้าอยากสลับกลับ API: วาง fetch จริงไว้ที่นี่)
     } catch (error) {
       console.error('Failed to fetch next warp', error);
     } finally {
@@ -286,39 +283,23 @@ const TestLandingPage = () => {
   }, []);
 
   const completeCurrentWarp = useCallback(async (transactionId: string) => {
-    if (!transactionId) {
-      setCurrentWarp(null);
-      setCountdown(0);
+    // MOCK: ไม่ต้องเรียก API ใดๆ
+    setCurrentWarp(null);
+    setCountdown(0);
+    setTimeout(() => {
       fetchNextWarpRef.current?.();
-      return;
-    }
-
-    try {
-      await fetch(API_ENDPOINTS.displayComplete(transactionId), {
-        method: 'POST',
-      });
-    } catch (error) {
-      console.error('Failed to mark warp as displayed', error);
-    } finally {
-      setCurrentWarp(null);
-      setCountdown(0);
-      setTimeout(() => {
-        fetchNextWarpRef.current?.();
-      }, 500);
-    }
+    }, 500);
   }, []);
 
   useEffect(() => {
     fetchNextWarpRef.current = fetchNextWarp;
   }, [fetchNextWarp]);
 
+  // Timer & auto-complete
   useEffect(() => {
-    if (!currentWarp) {
-      return undefined;
-    }
+    if (!currentWarp) return;
 
     setCountdown(currentWarp.displaySeconds);
-
     const interval = setInterval(() => {
       setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
@@ -333,160 +314,102 @@ const TestLandingPage = () => {
     };
   }, [currentWarp, completeCurrentWarp]);
 
+  /** ==============================
+   * STREAM/POOL LOGIC (MOCK)
+   * ============================== */
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    let eventSource: EventSource | null = null;
-    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    const connect = () => {
-      eventSource = new EventSource(API_ENDPOINTS.displayStream);
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (!currentWarpRef.current && (data?.queueCount > 0 || data?.current)) {
-            fetchNextWarpRef.current?.();
-          }
-        } catch {
-          // ignore malformed payloads
-        }
-      };
-
-      eventSource.onerror = () => {
-        eventSource?.close();
-        if (reconnectTimeout) {
-          clearTimeout(reconnectTimeout);
-        }
-        reconnectTimeout = setTimeout(() => {
-          connect();
-        }, 5000);
-      };
-    };
-
-    connect();
-
-    fetchNextWarpRef.current?.();
-
-    const poller = setInterval(() => {
-      if (!currentWarpRef.current) {
-        fetchNextWarpRef.current?.();
-      }
-    }, 15000);
-
-    return () => {
-      if (eventSource) {
-        eventSource.close();
-      }
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
-      clearInterval(poller);
-    };
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    let eventSource: EventSource | null = null;
     if (typeof window !== 'undefined') {
       setSelfWarpUrl(`${window.location.origin}/self-warp`);
     }
 
-    const normaliseSupporters = (list: unknown): Supporter[] => {
-      if (!Array.isArray(list)) return [];
-      return list
-        .map((item) => ({
-          customerName: item?.customerName ?? 'Unknown',
-          totalAmount: Number(item?.totalAmount ?? 0),
-          customerAvatar: item?.customerAvatar ?? null,
-          totalSeconds: item?.totalSeconds ? Number(item.totalSeconds) : undefined,
-        }))
-        .filter((entry) => entry.totalAmount > 0)
-        .slice(0, 3);
-    };
+    // เริ่มดึง warp แรก
+    fetchNextWarpRef.current?.();
 
-    const fetchInitial = async () => {
-      try {
-        const response = await fetch(`${API_ENDPOINTS.topSupporters}?limit=3`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch supporters');
-        }
+    // ถ้ายังไม่มี currentWarp ให้พยายามดึงทุก 15 วิ
+    const poller = setInterval(() => {
+      if (!currentWarpRef.current) fetchNextWarpRef.current?.();
+    }, 15000);
 
-        const body = await response.json();
-        if (isMounted) {
-          const parsed = normaliseSupporters(body?.supporters);
-          if (parsed.length > 0) {
-            setSupporters(parsed);
-          }
-        }
-      } catch {
-        // fall back silently to seeded supporters
-      }
-    };
-
-    const setupStream = () => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-
-      eventSource = new EventSource(API_ENDPOINTS.leaderboardStream);
-
-      eventSource.onmessage = (event) => {
-        if (!isMounted) return;
-        try {
-          const payload = JSON.parse(event.data);
-          const parsed = normaliseSupporters(payload?.supporters);
-          if (parsed.length > 0) {
-            setSupporters(parsed);
-          }
-        } catch {
-          // ignore malformed messages
-        }
-      };
-
-      eventSource.onerror = () => {
-        if (eventSource) {
-          eventSource.close();
-          eventSource = null;
-        }
-        // attempt to re-establish after delay
-        if (isMounted) {
-          setTimeout(() => {
-            if (!eventSource) {
-              setupStream();
-            }
-          }, 5000);
-        }
-      };
-    };
-
-    fetchInitial();
-    setupStream();
-
-    return () => {
-      isMounted = false;
-      if (eventSource) {
-        eventSource.close();
-        eventSource = null;
-      }
-    };
+    return () => clearInterval(poller);
   }, []);
+
+  // Supporters mock stream/update
+  useEffect(() => {
+    let isMounted = true;
+    if (MOCK_MODE) {
+      setSupporters(mockSupportersSeed);
+
+      // จำลองยอดเปลี่ยนเล็กน้อยทุก 6 วิ
+      const iv = setInterval(() => {
+        if (!isMounted) return;
+        setSupporters((prev) => {
+          const next = [...prev];
+          if (next.length === 0) return mockSupportersSeed;
+          const i = Math.floor(Math.random() * next.length);
+          const bump = (Math.random() < 0.5 ? 20 : 50);
+          next[i] = { ...next[i], totalAmount: next[i].totalAmount + bump };
+          // sort ใหม่
+          next.sort((a, b) => b.totalAmount - a.totalAmount);
+          return next.slice(0, 3);
+        });
+      }, 6000);
+
+      return () => {
+        isMounted = false;
+        clearInterval(iv);
+      };
+    }
+
+    // (ถ้าอยากสลับกลับ API & SSE: วางโค้ดจริงไว้ที่นี่)
+    return () => {};
+  }, []);
+
+  /** ==============================
+   * BACKGROUND IMAGE & COLORS
+   * ============================== */
+  const bgImageUrl = useMemo(() => {
+    const src = settings?.backgroundImage || null;
+    if (!src) {
+      setImageColors(null);
+      return null;
+    }
+    const imageUrl = resolveMediaSource(src) || null;
+    if (imageUrl) extractImageColors(imageUrl);
+    return imageUrl;
+  }, [settings?.backgroundImage, resolveMediaSource, extractImageColors]);
+
+  const defaultPrimary = '#6366f1';   // indigo-500
+  const defaultSecondary = '#f472b6'; // pink-400 (ไฮไลต์อุ่นๆ)
+  const gradientPrimary = imageColors?.primary || defaultPrimary;
+  const gradientSecondary = imageColors?.secondary || defaultSecondary;
+
+  const toRgba = (color: string, alpha: number) => {
+    if (color.startsWith('rgb(')) {
+      return color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
+    }
+    if (color.startsWith('#')) {
+      let hex = color.slice(1);
+      if (hex.length === 3) {
+        hex = hex.split('').map((c) => c + c).join('');
+      }
+      const num = parseInt(hex, 16);
+      const r = (num >> 16) & 255;
+      const g = (num >> 8) & 255;
+      const b = num & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    return color;
+  };
 
   const hasLiveData = supporters.length > 0;
   const supportersToDisplay = hasLiveData ? supporters : fallbackSupporters;
-  const warpImage = useMemo(() => {
-    if (!currentWarp) {
-      return null;
-    }
 
+  const warpImage = useMemo(() => {
+    if (!currentWarp) return null;
     return (
       resolveMediaSource(currentWarp.productImage) ||
       resolveMediaSource(currentWarp.customerAvatar) ||
-      `https://ui-avatars.com/api/?background=1e1b4b&color=fff&name=${encodeURIComponent(
-        currentWarp.customerName
-      )}`
+      `https://ui-avatars.com/api/?background=1e1b4b&color=fff&name=${encodeURIComponent(currentWarp.customerName)}`
     );
   }, [currentWarp, resolveMediaSource]);
 
@@ -498,64 +421,16 @@ const TestLandingPage = () => {
 
   const brandName = settings?.brandName || '';
   const tagline = settings?.tagline || '';
-  const backgroundImage = useMemo(() => {
-    if (!settings?.backgroundImage) {
-      setImageColors(null);
-      return null;
-    }
-    // If it's a file path, serve from API, otherwise use resolveMediaSource for base64
-    let imageUrl;
-    if (settings.backgroundImage.startsWith('/uploads/')) {
-      imageUrl = `${window.location.origin}/api${settings.backgroundImage}`;
-    } else {
-      imageUrl = resolveMediaSource(settings.backgroundImage);
-    }
-    console.log('Background image URL:', imageUrl);
-    
-    // Extract colors from the image
-    if (imageUrl) {
-      extractImageColors(imageUrl);
-    }
-    
-    return imageUrl;
-  }, [settings?.backgroundImage, resolveMediaSource, extractImageColors]);
-
-  const defaultPrimary = '#6366f1';
-  const defaultSecondary = '#f472b6';
-  const gradientPrimary = imageColors?.primary || defaultPrimary;
-  const gradientSecondary = imageColors?.secondary || defaultSecondary;
-
-  const toRgba = (color: string, alpha: number) => {
-    if (color.startsWith('rgb(')) {
-      return color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
-    }
-    if (color.startsWith('#')) {
-      let hex = color.slice(1);
-      if (hex.length === 3) {
-        hex = hex
-          .split('')
-          .map((char) => char + char)
-          .join('');
-      }
-      const numeric = parseInt(hex, 16);
-      const r = (numeric >> 16) & 255;
-      const g = (numeric >> 8) & 255;
-      const b = numeric & 255;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-    return color;
-  };
 
   return (
     <div
       className="relative flex min-h-screen w-screen overflow-hidden bg-slate-950 text-slate-100"
       style={
-        backgroundImage
+        bgImageUrl
           ? {
-              backgroundImage: `url(${backgroundImage})`,
+              backgroundImage: `url(${bgImageUrl})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              
               backgroundRepeat: 'no-repeat',
               backgroundColor: gradientPrimary || '#0f172a',
               backgroundClip: 'padding-box',
@@ -566,16 +441,16 @@ const TestLandingPage = () => {
       }
     >
       {/* Blurred background image overlay */}
-      {backgroundImage && (
-        <div 
+      {bgImageUrl && (
+        <div
           className="pointer-events-none fixed inset-0 -z-20"
           style={{
-            backgroundImage: `url(${backgroundImage})`,
+            backgroundImage: `url(${bgImageUrl})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             filter: 'blur(20px)',
-            transform: 'scale(1.05)', // Reduced scale for smoother edges
+            transform: 'scale(1.05)',
             opacity: 0.25,
             backgroundClip: 'padding-box',
             backgroundOrigin: 'padding-box',
@@ -584,21 +459,25 @@ const TestLandingPage = () => {
       )}
 
       {/* Smooth edge transition overlay */}
-      {backgroundImage && (
-        <div 
+      {bgImageUrl && (
+        <div
           className="pointer-events-none fixed inset-0 -z-20"
           style={{
-            background: `radial-gradient(ellipse at center, transparent 0%, transparent 40%, ${toRgba(gradientPrimary, 0.9)} 70%, ${toRgba(gradientPrimary, 1)} 100%)`,
+            background: `radial-gradient(ellipse at center, transparent 0%, transparent 40%, ${toRgba(
+              gradientPrimary,
+              0.9
+            )} 70%, ${toRgba(gradientPrimary, 1)} 100%)`,
             opacity: 0.8,
           }}
         />
       )}
 
-      {/* Gradient backdrops tuned to the hero palette (works with or without an uploaded image) */}
+      {/* Gradient backdrops */}
       <div
         className="pointer-events-none fixed inset-0 -z-30 opacity-70"
         style={{
-          background: `radial-gradient(120% 120% at 15% 20%, ${toRgba(gradientPrimary, 0.55)} 0%, transparent 70%), radial-gradient(120% 120% at 85% 80%, ${toRgba(gradientSecondary, 0.5)} 0%, transparent 72%)`,
+          background: `radial-gradient(120% 120% at 15% 20%, ${toRgba(gradientPrimary, 0.55)} 0%, transparent 70%),
+                       radial-gradient(120% 120% at 85% 80%, ${toRgba(gradientSecondary, 0.5)} 0%, transparent 72%)`,
         }}
       />
       <div
@@ -615,7 +494,11 @@ const TestLandingPage = () => {
               <div className="space-y-4">
                 <div className="relative aspect-square overflow-hidden rounded-[24px] border-4 border-emerald-400/60 bg-slate-900/60 shadow-[0_35px_100px_rgba(15,23,42,0.75)] ring-8 ring-emerald-400/30 sm:rounded-[32px] transform hover:scale-[1.02] transition-all duration-500">
                   {warpImage ? (
-                    <img src={warpImage} alt={currentWarp.customerName} className="h-full w-full object-cover transition-transform duration-500 hover:scale-110" />
+                    <img
+                      src={warpImage}
+                      alt={currentWarp.customerName}
+                      className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-slate-900/70 text-slate-100">
                       MeeWarp
@@ -637,8 +520,10 @@ const TestLandingPage = () => {
               </div>
               <div className="space-y-4 lg:space-y-5 xl:space-y-6 text-left">
                 <div className="min-w-0">
-                  <p className="text-sm lg:text-base xl:text-lg uppercase tracking-[0.4em] text-emerald-300 font-bold">Warp Spotlight</p>
-                  <h2 
+                  <p className="text-sm lg:text-base xl:text-lg uppercase tracking-[0.4em] text-emerald-300 font-bold">
+                    Warp Spotlight
+                  </p>
+                  <h2
                     className="mt-3 text-[clamp(2rem,8vw,7rem)] font-black text-white drop-shadow-lg truncate max-w-full"
                     title={currentWarp.selfDisplayName || currentWarp.customerName}
                   >
@@ -649,7 +534,9 @@ const TestLandingPage = () => {
                   <div className="flex flex-col items-center gap-2 lg:gap-3 xl:gap-4 rounded-xl border border-emerald-400/20 bg-gradient-to-br from-emerald-500/5 to-emerald-600/5 p-3 lg:p-4 xl:p-5 backdrop-blur-sm">
                     <div className="h-16 w-16 lg:h-20 lg:w-20 xl:h-24 xl:w-24 overflow-hidden rounded-lg border border-emerald-400/30 bg-white/95 shadow-[0_8px_25px_rgba(16,185,129,0.2)]">
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(currentWarp.socialLink)}`}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(
+                          currentWarp.socialLink
+                        )}`}
                         alt="QR Code สำหรับลิงก์โซเชียล"
                         className="h-full w-full object-contain"
                       />
@@ -663,10 +550,13 @@ const TestLandingPage = () => {
                   <div className="rounded-xl border border-emerald-400/60 bg-emerald-500/25 px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-xs lg:text-sm xl:text-base uppercase tracking-[0.3em] text-emerald-100 font-bold shadow-lg ring-2 ring-emerald-400/30">
                     Time Left
                   </div>
-                  <span className="text-2xl lg:text-4xl xl:text-5xl font-bold text-emerald-100 drop-shadow-lg">{countdownLabel}</span>
+                  <span className="text-2xl lg:text-4xl xl:text-5xl font-bold text-emerald-100 drop-shadow-lg">
+                    {countdownLabel}
+                  </span>
                 </div>
                 <p className="text-sm lg:text-base xl:text-lg font-medium text-slate-200 bg-white/5 rounded-xl px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-center">
-                  เวลาที่ซื้อไว้ทั้งหมด <span className="text-emerald-300 font-bold">{totalDurationLabel}</span>
+                  เวลาที่ซื้อไว้ทั้งหมด{' '}
+                  <span className="text-emerald-300 font-bold">{totalDurationLabel}</span>
                 </p>
               </div>
             </div>
@@ -723,9 +613,7 @@ const TestLandingPage = () => {
                 supporter.customerName
               )}`;
             const isPlaceholder = supporter.totalAmount <= 0;
-            const amountLabel = isPlaceholder
-              ? 'รอเริ่มต้น'
-              : currencyFormatter.format(supporter.totalAmount);
+            const amountLabel = isPlaceholder ? 'รอเริ่มต้น' : currencyFormatter.format(supporter.totalAmount);
 
             return (
               <li key={supporter.customerName} className="flex items-center gap-3 lg:gap-4 xl:gap-5">
@@ -740,7 +628,9 @@ const TestLandingPage = () => {
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[clamp(12px,0.9vw,16px)] lg:text-lg xl:text-xl font-semibold text-white truncate">{sanitizeName(supporter.customerName)}</p>
+                  <p className="text-[clamp(12px,0.9vw,16px)] lg:text-lg xl:text-xl font-semibold text-white truncate">
+                    {sanitizeName(supporter.customerName)}
+                  </p>
                   <p className="text-[clamp(10px,0.8vw,14px)] lg:text-base xl:text-lg text-slate-300">{amountLabel}</p>
                 </div>
               </li>
@@ -753,7 +643,6 @@ const TestLandingPage = () => {
             : 'ยังไม่มีใครขึ้นจอ ลองเป็นคนแรกที่ปล่อยวาร์ปดูไหม?'}
         </div>
       </div>
-
     </div>
   );
 };
